@@ -1,0 +1,14 @@
+ #!/usr/bin/env bash
+
+ set -eou pipefail
+
+echo "=> starting console"
+
+# if an .env file exists, load it
+[ -f .env ] && source .env
+
+# Default to notice log level but allow it to be overridden
+LOG_LEVEL=${LOG_LEVEL:-notice}
+
+# start the console
+LOG_LEVEL=$LOG_LEVEL iex -S mix

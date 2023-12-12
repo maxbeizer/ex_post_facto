@@ -1,0 +1,7 @@
+ #!/usr/bin/env bash
+
+ set -eou pipefail
+
+echo "=> starting setup"
+
+mix deps.get
