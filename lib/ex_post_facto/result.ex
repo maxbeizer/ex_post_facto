@@ -85,7 +85,7 @@ defmodule ExPostFacto.Result do
 
   defp add_data_point?(%{is_position_open: true}, :close), do: true
   defp add_data_point?(%{is_position_open: true}, _), do: false
-  defp add_data_point?(%{is_position_open: false}, false), do: false
+  defp add_data_point?(%{is_position_open: false}, :close), do: false
   defp add_data_point?(%{is_position_open: false}, _), do: true
 
   defp position_open?(:close), do: false
