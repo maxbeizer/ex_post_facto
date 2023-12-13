@@ -61,7 +61,7 @@ defmodule ExPostFacto.Result do
   def add_data_point(result, index, datum, action) do
     data_point = DataPoint.new(datum, action, index)
 
-    case should_add_data_point?(result, action) do
+    case add_data_point?(result, action) do
       true ->
         update_result(result, data_point, action)
 
@@ -74,7 +74,7 @@ defmodule ExPostFacto.Result do
     %{
       result
       | data_points: [data_point | result.data_points],
-        is_position_open: is_position_open?(action)
+        is_position_open: position_open?(action)
     }
   end
 
@@ -83,13 +83,13 @@ defmodule ExPostFacto.Result do
     %{result | total_profit_and_loss: calculate_profit_and_loss(result)}
   end
 
-  defp should_add_data_point?(%{is_position_open: true}, :close), do: true
-  defp should_add_data_point?(%{is_position_open: true}, _), do: false
-  defp should_add_data_point?(%{is_position_open: false}, false), do: false
-  defp should_add_data_point?(%{is_position_open: false}, _), do: true
+  defp add_data_point?(%{is_position_open: true}, :close), do: true
+  defp add_data_point?(%{is_position_open: true}, _), do: false
+  defp add_data_point?(%{is_position_open: false}, false), do: false
+  defp add_data_point?(%{is_position_open: false}, _), do: true
 
-  defp is_position_open?(:close), do: false
-  defp is_position_open?(_), do: true
+  defp position_open?(:close), do: false
+  defp position_open?(_), do: true
 
   @spec calculate_profit_and_loss(result :: %__MODULE__{}) :: float()
   defp calculate_profit_and_loss(result) do
