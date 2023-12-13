@@ -87,7 +87,6 @@ defmodule ExPostFactoTest do
     assert 2.5 == result.total_profit_and_loss
   end
 
-  @tag :focus
   test "backtest/3 collects P&L from the applied strategy when negative" do
     example_data = [
       %{high: 1.0, low: 0.0, open: 0.25, close: 1.75},

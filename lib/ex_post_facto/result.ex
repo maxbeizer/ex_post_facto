@@ -45,13 +45,14 @@ defmodule ExPostFacto.Result do
     %{
       result
       | data_points: [data_point | result.data_points],
-        is_position_open: is_position_open?(action),
-        total_profit_and_loss: calculate_profit_and_loss(result, data_point)
+        is_position_open: is_position_open?(action)
     }
   end
 
   @spec compile(%__MODULE__{}) :: %__MODULE__{}
-  def compile(result), do: result
+  def compile(result) do
+    %{result | total_profit_and_loss: calculate_profit_and_loss(result)}
+  end
 
   defp should_add_data_point?(%{is_position_open: true}, :close), do: true
   defp should_add_data_point?(%{is_position_open: true}, _), do: false
@@ -61,52 +62,48 @@ defmodule ExPostFacto.Result do
   defp is_position_open?(:close), do: false
   defp is_position_open?(_), do: true
 
-  @spec calculate_profit_and_loss(
-          result :: %__MODULE__{},
-          data_point :: map()
+  @spec calculate_profit_and_loss(result :: %__MODULE__{}) :: float()
+  defp calculate_profit_and_loss(result) do
+    do_calculate_profit_and_loss(result.data_points, 0.0)
+  end
+
+  @spec do_calculate_profit_and_loss(
+          data_points :: list(),
+          total_profit_and_loss :: float()
         ) :: float()
-  defp calculate_profit_and_loss(%__MODULE__{data_points: []}, _), do: 0.0
+  defp do_calculate_profit_and_loss([], total_profit_and_loss), do: total_profit_and_loss
 
-  defp calculate_profit_and_loss(result, %{action: :close, datum: %{close: close}}) do
-    do_calculate_profit_and_loss(result, close, hd(result.data_points))
-  end
+  defp do_calculate_profit_and_loss(data, total_profit_and_loss) when length(data) == 1,
+    do: total_profit_and_loss
 
-  defp calculate_profit_and_loss(result, _), do: result.total_profit_and_loss
+  defp do_calculate_profit_and_loss([head, previous | rest], total_profit_and_loss) do
+    %{datum: %{close: head_close}, action: head_action} = head
+    %{datum: %{close: previous_close}, action: previous_action} = previous
 
-  defp do_calculate_profit_and_loss(result, close, %{
-         datum: %{close: previous_close},
-         action: :buy
-       })
-       when close > previous_close do
-    result.total_profit_and_loss + close + previous_close
-  end
+    computed_profit_and_loss =
+      cond do
+        head_action == :close and previous_action == :buy and head_close > previous_close ->
+          total_profit_and_loss + head_close + previous_close
 
-  defp do_calculate_profit_and_loss(result, close, %{datum: %{close: previous_close}})
-       when close == previous_close do
-    result.total_profit_and_loss
-  end
+        head_action == :close and previous_action == :buy and head_close < previous_close ->
+          total_profit_and_loss + head_close - previous_close
 
-  defp do_calculate_profit_and_loss(result, close, %{
-         datum: %{close: previous_close},
-         action: :buy
-       })
-       when close < previous_close do
-    result.total_profit_and_loss + close - previous_close
-  end
+        head_action == :close and previous_action == :buy and head_close == previous_close ->
+          total_profit_and_loss
 
-  defp do_calculate_profit_and_loss(result, close, %{
-         datum: %{close: previous_close},
-         action: :sell
-       })
-       when close < previous_close do
-    result.total_profit_and_loss + previous_close + close
-  end
+        head_action == :close and previous_action == :sell and head_close > previous_close ->
+          total_profit_and_loss + previous_close + head_close
 
-  defp do_calculate_profit_and_loss(result, close, %{
-         datum: %{close: previous_close},
-         action: :sell
-       })
-       when close > previous_close do
-    result.total_profit_and_loss + previous_close - close
+        head_action == :close and previous_action == :sell and head_close < previous_close ->
+          total_profit_and_loss + previous_close - head_close
+
+        head_action == :close and previous_action == :sell and head_close == previous_close ->
+          total_profit_and_loss
+
+        true ->
+          total_profit_and_loss
+      end
+
+    do_calculate_profit_and_loss(rest, computed_profit_and_loss)
   end
 end
