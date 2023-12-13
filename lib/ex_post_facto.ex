@@ -52,7 +52,7 @@ defmodule ExPostFacto do
       |> Enum.map(&InputData.munge/1)
       |> Enum.with_index(fn datum, index -> {index, datum} end)
       |> Enum.reduce(result, &apply_strategy(&1, &2, strategy))
-      |> Result.compile()
+      |> Result.compile(options)
 
     {:ok, Output.new(data, strategy, result)}
   end

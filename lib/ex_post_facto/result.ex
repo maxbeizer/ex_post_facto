@@ -81,8 +81,8 @@ defmodule ExPostFacto.Result do
     }
   end
 
-  @spec compile(%__MODULE__{}) :: %__MODULE__{}
-  def compile(result) do
+  @spec compile(result :: %__MODULE__{}, options :: keyword()) :: %__MODULE__{}
+  def compile(result, _options) do
     %{result | total_profit_and_loss: calculate_profit_and_loss(result)}
   end
 
