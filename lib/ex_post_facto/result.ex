@@ -13,6 +13,12 @@ defmodule ExPostFacto.Result do
     %__MODULE__{}
   end
 
+  @spec add_data_point(
+          result :: %__MODULE__{},
+          index :: integer(),
+          datum :: map(),
+          action :: atom()
+        ) :: %__MODULE__{}
   def add_data_point(result, index, datum, action) do
     data_point = %{
       index: index,
@@ -22,4 +28,7 @@ defmodule ExPostFacto.Result do
 
     %{result | data_points: [data_point | result.data_points]}
   end
+
+  @spec compile(%__MODULE__{}) :: %__MODULE__{}
+  def compile(result), do: result
 end

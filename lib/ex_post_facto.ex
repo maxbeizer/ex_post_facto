@@ -50,6 +50,7 @@ defmodule ExPostFacto do
       data
       |> Enum.with_index(fn datum, index -> {index, datum} end)
       |> Enum.reduce(result, &apply_strategy(&1, &2, strategy))
+      |> Result.compile()
 
     {:ok, Output.new(data, strategy, result)}
   end

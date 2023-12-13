@@ -1,4 +1,4 @@
-defmodule ExPostFacto.Noop do
+defmodule ExPostFacto.ExampleStrategies.Noop do
   @moduledoc false
 
   @doc false
