@@ -135,7 +135,6 @@ defmodule ExPostFactoTest do
     assert 2.5 == result.total_profit_and_loss
   end
 
-  @tag :focus
   test "backtest/3 handles sells for loss" do
     example_data = [
       %{high: 1.0, low: 0.0, open: 0.25, close: 0.75},
@@ -146,7 +145,7 @@ defmodule ExPostFactoTest do
 
     {:ok, %{result: result}} = ExPostFacto.backtest(example_data, mfa)
 
-    # 0.75 - 1.75 = -11.0
+    # 0.75 - 1.75 = -1.0
     assert -1.0 == result.total_profit_and_loss
   end
 end
