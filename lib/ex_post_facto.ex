@@ -49,14 +49,17 @@ defmodule ExPostFacto do
     result =
       data
       |> Enum.with_index(fn datum, index -> {index, datum} end)
-      |> Enum.reduce(result, fn datum_with_index, acc ->
-        apply_strategy(datum_with_index, strategy, acc)
-      end)
+      |> Enum.reduce(result, &apply_strategy(&1, &2, strategy))
 
     {:ok, Output.new(data, strategy, result)}
   end
 
-  defp apply_strategy({index, datum}, {m, f, _a}, result) do
+  @spec apply_strategy(
+          {index :: integer(), datum :: map()},
+          result :: Result.t(),
+          strategy :: mfa()
+        ) :: Result.t()
+  defp apply_strategy({index, datum}, result, {m, f, _a}) do
     action = apply(m, f, [datum])
 
     cond do
