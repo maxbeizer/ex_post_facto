@@ -8,6 +8,7 @@ defmodule ExPostFactoTest do
   }
 
   alias ExPostFacto.{
+    DataPoint,
     InputData,
     Output,
     Result
@@ -68,7 +69,10 @@ defmodule ExPostFactoTest do
     example_data = [%{high: 1.0, low: 0.0, open: 0.25, close: 0.75}]
 
     mfa = {BuyBuyBuy, :call, []}
-    expected_data_points = [%{index: 0, action: :buy, datum: InputData.munge(hd(example_data))}]
+
+    expected_data_points = [
+      %DataPoint{index: 0, action: :buy, datum: InputData.munge(hd(example_data))}
+    ]
 
     {:ok, %{result: result}} = ExPostFacto.backtest(example_data, mfa)
 

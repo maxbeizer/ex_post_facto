@@ -2,6 +2,7 @@ defmodule ExPostFacto.Result do
   @moduledoc """
   The result contains the output of applying a strategy to a set of data.
   """
+  alias ExPostFacto.DataPoint
 
   # TODOs:
   # - make this concurrent
@@ -58,11 +59,7 @@ defmodule ExPostFacto.Result do
           action :: atom()
         ) :: %__MODULE__{}
   def add_data_point(result, index, datum, action) do
-    data_point = %{
-      index: index,
-      datum: datum,
-      action: action
-    }
+    data_point = DataPoint.new(datum, action, index)
 
     case should_add_data_point?(result, action) do
       true ->
