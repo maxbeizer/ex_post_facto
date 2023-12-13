@@ -4,6 +4,7 @@ defmodule ExPostFactoTest do
 
   alias ExPostFacto.ExampleStrategies.{
     BuyBuyBuy,
+    SellSellSell,
     Noop
   }
 
@@ -117,6 +118,34 @@ defmodule ExPostFactoTest do
     {:ok, %{result: result}} = ExPostFacto.backtest(example_data, mfa)
 
     # 0.75 - 1.75 = -1.0
+    assert -1.0 == result.total_profit_and_loss
+  end
+
+  test "backtest/3 handles sells for profit" do
+    example_data = [
+      %{high: 1.0, low: 0.0, open: 0.25, close: 1.75},
+      %{high: 100.0, low: 0.0, open: 1.25, close: 0.75}
+    ]
+
+    mfa = {SellSellSell, :call, []}
+
+    {:ok, %{result: result}} = ExPostFacto.backtest(example_data, mfa)
+
+    # 1.75 - 0.75 = 1.0
+    assert 1.0 == result.total_profit_and_loss
+  end
+
+  test "backtest/3 handles sells for loss" do
+    example_data = [
+      %{high: 1.0, low: 0.0, open: 0.25, close: 0.75},
+      %{high: 100.0, low: 0.0, open: 1.25, close: 1.75}
+    ]
+
+    mfa = {SellSellSell, :call, []}
+
+    {:ok, %{result: result}} = ExPostFacto.backtest(example_data, mfa)
+
+    # 0.75 - 1.75 = -11.0
     assert -1.0 == result.total_profit_and_loss
   end
 end
