@@ -29,6 +29,9 @@ defmodule ExPostFacto do
 
       iex> ExPostFacto.backtest([], nil)
       {:error, "strategy cannot be nil"}
+
+      iex> ExPostFacto.backtest([], {Noop, :noop, []})
+      {:ok, %ExPostFacto.Output{data: [], result: %ExPostFacto.Result{data_points: [], total_profit_and_loss: 0.0, max_draw_down: 0.0}, strategy: {Noop, :noop, []}}}
   """
   @spec backtest(
           data :: list(),
