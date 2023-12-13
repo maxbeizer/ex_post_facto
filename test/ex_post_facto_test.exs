@@ -121,6 +121,38 @@ defmodule ExPostFactoTest do
     assert -1.0 == result.total_profit_and_loss
   end
 
+  test "backtest/3 handles multiple buy profit points" do
+    example_data = [
+      %{high: 1.0, low: 0.0, open: 0.25, close: 0.75},
+      %{high: 100.0, low: 1.0, open: 1.25, close: 1.75},
+      %{high: 1.0, low: 0.0, open: 0.25, close: 0.75},
+      %{high: 100.0, low: 1.0, open: 1.25, close: 1.75}
+    ]
+
+    mfa = {BuyBuyBuy, :call, []}
+
+    {:ok, %{result: result}} = ExPostFacto.backtest(example_data, mfa)
+
+    # 2 * (1.75 + 0.75) = 5.0
+    assert 5.0 == result.total_profit_and_loss
+  end
+
+  test "backtest/3 handles multiple buy loss points" do
+    example_data = [
+      %{high: 1.0, low: 0.0, open: 0.25, close: 1.75},
+      %{high: 100.0, low: 0.0, open: 1.25, close: 0.75},
+      %{high: 1.0, low: 0.0, open: 0.25, close: 1.75},
+      %{high: 100.0, low: 0.0, open: 1.25, close: 0.75}
+    ]
+
+    mfa = {BuyBuyBuy, :call, []}
+
+    {:ok, %{result: result}} = ExPostFacto.backtest(example_data, mfa)
+
+    # 2 * (1.75 - 0.75) = -2.0
+    assert -2.0 == result.total_profit_and_loss
+  end
+
   test "backtest/3 handles sells for profit" do
     example_data = [
       %{high: 1.0, low: 0.0, open: 0.25, close: 1.75},
@@ -147,5 +179,37 @@ defmodule ExPostFactoTest do
 
     # 0.75 - 1.75 = -1.0
     assert -1.0 == result.total_profit_and_loss
+  end
+
+  test "backtest/3 handles multiple sell profit points" do
+    example_data = [
+      %{high: 1.0, low: 0.0, open: 0.25, close: 1.75},
+      %{high: 100.0, low: 0.0, open: 1.25, close: 0.75},
+      %{high: 1.0, low: 0.0, open: 0.25, close: 1.75},
+      %{high: 100.0, low: 0.0, open: 1.25, close: 0.75}
+    ]
+
+    mfa = {SellSellSell, :call, []}
+
+    {:ok, %{result: result}} = ExPostFacto.backtest(example_data, mfa)
+
+    # 2 * (1.75 + 0.75) = 5.0
+    assert 5.0 == result.total_profit_and_loss
+  end
+
+  test "backtest/3 handles multiple sell loss points" do
+    example_data = [
+      %{high: 1.0, low: 0.0, open: 0.25, close: 0.75},
+      %{high: 100.0, low: 0.0, open: 1.25, close: 1.75},
+      %{high: 1.0, low: 0.0, open: 0.25, close: 0.75},
+      %{high: 100.0, low: 0.0, open: 1.25, close: 1.75}
+    ]
+
+    mfa = {SellSellSell, :call, []}
+
+    {:ok, %{result: result}} = ExPostFacto.backtest(example_data, mfa)
+
+    # 2 * (1.75 - 0.75) = -2.0
+    assert -2.0 == result.total_profit_and_loss
   end
 end
