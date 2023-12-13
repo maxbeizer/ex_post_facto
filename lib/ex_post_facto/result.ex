@@ -4,6 +4,10 @@ defmodule ExPostFacto.Result do
   """
   alias ExPostFacto.DataPoint
 
+  defmodule ResultCalculationError do
+    defexception message: "Error calculating result"
+  end
+
   # TODOs:
   # - make this concurrent
   # - fill out data similar to backtesting output
@@ -80,7 +84,7 @@ defmodule ExPostFacto.Result do
 
   @spec compile(result :: %__MODULE__{}, options :: keyword()) :: %__MODULE__{}
   def compile(result, _options) do
-    %{result | total_profit_and_loss: calculate_profit_and_loss(result)}
+    %{result | total_profit_and_loss: calculate_profit_and_loss!(result)}
   end
 
   defp add_data_point?(%{is_position_open: true}, :close), do: true
@@ -91,21 +95,21 @@ defmodule ExPostFacto.Result do
   defp position_open?(:close), do: false
   defp position_open?(_), do: true
 
-  @spec calculate_profit_and_loss(result :: %__MODULE__{}) :: float()
-  defp calculate_profit_and_loss(result) do
-    do_calculate_profit_and_loss(result.data_points, 0.0)
+  @spec calculate_profit_and_loss!(result :: %__MODULE__{}) :: float() | no_return()
+  defp calculate_profit_and_loss!(result) do
+    do_calculate_profit_and_loss!(result.data_points, 0.0)
   end
 
-  @spec do_calculate_profit_and_loss(
+  @spec do_calculate_profit_and_loss!(
           data_points :: list(),
           total_profit_and_loss :: float()
-        ) :: float()
-  defp do_calculate_profit_and_loss([], total_profit_and_loss), do: total_profit_and_loss
+        ) :: float() | no_return()
+  defp do_calculate_profit_and_loss!([], total_profit_and_loss), do: total_profit_and_loss
 
-  defp do_calculate_profit_and_loss(data, total_profit_and_loss) when length(data) == 1,
+  defp do_calculate_profit_and_loss!(data, total_profit_and_loss) when length(data) == 1,
     do: total_profit_and_loss
 
-  defp do_calculate_profit_and_loss([head, previous | rest], total_profit_and_loss) do
+  defp do_calculate_profit_and_loss!([head, previous | rest], total_profit_and_loss) do
     %{datum: %{close: head_close}, action: head_action} = head
     %{datum: %{close: previous_close}, action: previous_action} = previous
 
@@ -130,9 +134,10 @@ defmodule ExPostFacto.Result do
           total_profit_and_loss
 
         true ->
-          total_profit_and_loss
+          raise ResultCalculationError,
+                "Unknown action combination: #{inspect(head_action)} and #{inspect(previous_action)}"
       end
 
-    do_calculate_profit_and_loss(rest, computed_profit_and_loss)
+    do_calculate_profit_and_loss!(rest, computed_profit_and_loss)
   end
 end
