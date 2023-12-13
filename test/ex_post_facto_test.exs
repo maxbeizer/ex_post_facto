@@ -73,6 +73,19 @@ defmodule ExPostFactoTest do
     assert expected_data_points == result.data_points
   end
 
+  test "backtest/3 handles P&L when there are open positions" do
+    example_data = [
+      %{high: 1.0, low: 0.0, open: 0.25, close: 0.75}
+    ]
+
+    mfa = {BuyBuyBuy, :call, []}
+
+    {:ok, %{result: result}} = ExPostFacto.backtest(example_data, mfa)
+
+    # No realized P&L
+    assert 0.0 == result.total_profit_and_loss
+  end
+
   test "backtest/3 collects P&L from the applied strategy when positive" do
     example_data = [
       %{high: 1.0, low: 0.0, open: 0.25, close: 0.75},
