@@ -125,10 +125,10 @@ defmodule ExPostFacto.Result do
           total_profit_and_loss
 
         head_action == :close and previous_action == :sell and head_close > previous_close ->
-          total_profit_and_loss + previous_close + head_close
+          total_profit_and_loss + previous_close - head_close
 
         head_action == :close and previous_action == :sell and head_close < previous_close ->
-          total_profit_and_loss + previous_close - head_close
+          total_profit_and_loss + previous_close + head_close
 
         head_action == :close and previous_action == :sell and head_close == previous_close ->
           total_profit_and_loss
