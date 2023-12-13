@@ -106,7 +106,7 @@ defmodule ExPostFacto.Result do
         ) :: float() | no_return()
   defp do_calculate_profit_and_loss!([], total_profit_and_loss), do: total_profit_and_loss
 
-  defp do_calculate_profit_and_loss!(data, total_profit_and_loss) when length(data) == 1,
+  defp do_calculate_profit_and_loss!([_single_data_point], total_profit_and_loss),
     do: total_profit_and_loss
 
   defp do_calculate_profit_and_loss!([head, previous | rest], total_profit_and_loss) do
