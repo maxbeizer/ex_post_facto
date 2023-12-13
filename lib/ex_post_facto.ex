@@ -43,8 +43,8 @@ defmodule ExPostFacto do
   def backtest(nil, _strategy, _options), do: {:error, "data cannot be nil"}
   def backtest(_data, nil, _options), do: {:error, "strategy cannot be nil"}
 
-  def backtest(data, strategy, _options) do
-    result = Result.new()
+  def backtest(data, strategy, options) do
+    result = build_initial_result(options)
 
     result =
       data
@@ -70,5 +70,11 @@ defmodule ExPostFacto do
       true ->
         result
     end
+  end
+
+  @spec build_initial_result(options :: keyword()) :: Result.t()
+  defp build_initial_result(options) do
+    starting_balance = Keyword.get(options, :starting_balance, 0.0)
+    Result.new(starting_balance)
   end
 end

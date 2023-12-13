@@ -24,6 +24,19 @@ defmodule ExPostFactoTest do
     assert {:ok, %Output{}} = ExPostFacto.backtest([], {Noop, :noop, []})
   end
 
+  test "backtest/3 returns an initial starting balance of 0.0 if not specified" do
+    {:ok, %{result: result}} = ExPostFacto.backtest([], {Noop, :noop, []})
+
+    assert 0.0 == result.starting_balance
+  end
+
+  test "backtest/3 allows passing in of an initial starting_balance" do
+    {:ok, %{result: result}} =
+      ExPostFacto.backtest([], {Noop, :noop, []}, starting_balance: 100.0)
+
+    assert 100.0 == result.starting_balance
+  end
+
   test "backtest/3 returns an output struct with the data" do
     example_data = [%{high: 1.0, low: 0.0, open: 0.25, close: 0.75}]
 
@@ -58,5 +71,34 @@ defmodule ExPostFactoTest do
     {:ok, %{result: result}} = ExPostFacto.backtest(example_data, mfa)
 
     assert expected_data_points == result.data_points
+  end
+
+  test "backtest/3 collects P&L from the applied strategy when positive" do
+    example_data = [
+      %{high: 1.0, low: 0.0, open: 0.25, close: 0.75},
+      %{high: 100.0, low: 1.0, open: 1.25, close: 1.75}
+    ]
+
+    mfa = {BuyBuyBuy, :call, []}
+
+    {:ok, %{result: result}} = ExPostFacto.backtest(example_data, mfa)
+
+    # 1.75 + 0.75 = 2.5
+    assert 2.5 == result.total_profit_and_loss
+  end
+
+  @tag :focus
+  test "backtest/3 collects P&L from the applied strategy when negative" do
+    example_data = [
+      %{high: 1.0, low: 0.0, open: 0.25, close: 1.75},
+      %{high: 100.0, low: 0.0, open: 1.25, close: 0.75}
+    ]
+
+    mfa = {BuyBuyBuy, :call, []}
+
+    {:ok, %{result: result}} = ExPostFacto.backtest(example_data, mfa)
+
+    # 0.75 - 1.75 = -1.0
+    assert -1.0 == result.total_profit_and_loss
   end
 end
