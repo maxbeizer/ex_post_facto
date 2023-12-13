@@ -6,6 +6,7 @@ defmodule ExPostFacto do
   """
 
   alias ExPostFacto.{
+    InputData,
     Output,
     Result
   }
@@ -48,6 +49,7 @@ defmodule ExPostFacto do
 
     result =
       data
+      |> Enum.map(&InputData.munge/1)
       |> Enum.with_index(fn datum, index -> {index, datum} end)
       |> Enum.reduce(result, &apply_strategy(&1, &2, strategy))
       |> Result.compile()
