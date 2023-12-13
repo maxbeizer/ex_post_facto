@@ -3,7 +3,11 @@ defmodule ExPostFactoTest do
   doctest ExPostFacto
 
   alias ExPostFacto.ExampleStrategies.Noop
-  alias ExPostFacto.Output
+
+  alias ExPostFacto.{
+    Output,
+    Result
+  }
 
   test "backtest/3 returns an error when data is nil" do
     assert {:error, "data cannot be nil"} = ExPostFacto.backtest(nil, {Noop, :noop, []})
@@ -34,5 +38,15 @@ defmodule ExPostFactoTest do
       ExPostFacto.backtest(example_data, mfa)
 
     assert mfa == output.strategy
+  end
+
+  test "backtest/3 returns an output struct with the result struct" do
+    example_data = [%{high: 1.0, low: 0.0, open: 0.25, close: 0.75}]
+    mfa = {Noop, :noop, []}
+
+    {:ok, output} =
+      ExPostFacto.backtest(example_data, mfa)
+
+    assert %Result{} == output.result
   end
 end
