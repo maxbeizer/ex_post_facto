@@ -10,6 +10,8 @@ defmodule ExPostFacto do
     Result
   }
 
+  @actions [:buy, :sell, :close]
+
   @doc """
   The main entry point of the library. This function takes in a list of HLOC
   data and function that will be used to generate buy and sell signals. The
@@ -54,20 +56,11 @@ defmodule ExPostFacto do
   defp apply_strategy({index, datum}, {m, f, _a}, result) do
     action = apply(m, f, [datum])
 
-    case action do
-      :buy ->
-        result
-        |> Result.add_data_point(index, datum, :buy)
+    cond do
+      action in @actions ->
+        Result.add_data_point(result, index, datum, action)
 
-      :sell ->
-        result
-        |> Result.add_data_point(index, datum, :sell)
-
-      :close ->
-        result
-        |> Result.add_data_point(index, datum, :close)
-
-      _ ->
+      true ->
         result
     end
   end
