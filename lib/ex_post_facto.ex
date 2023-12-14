@@ -17,6 +17,8 @@ defmodule ExPostFacto do
   @type module_function_arguments :: {module :: atom(), function :: atom(), args :: list()}
 
   defmodule BacktestError do
+    @moduledoc false
+    @doc false
     defexception message: "unable to run backtest"
   end
 
