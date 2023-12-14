@@ -3,14 +3,21 @@ defmodule ExPostFacto.Output do
   The output is what is returned from the backtest function.
   """
 
-  alias ExPostFacto.Result
+  alias ExPostFacto.{
+    DataPoint,
+    Result
+  }
 
   defstruct data: [], strategy: nil, result: nil
 
   @doc """
   Creates a new output struct.
   """
-  @spec new(list(), mfa(), Result.t()) :: %__MODULE__{}
+  @spec new(
+          data :: [DataPoint.t()],
+          strategy :: ExPostFacto.module_function_arguments(),
+          result :: Result.t()
+        ) :: %__MODULE__{}
   def new(data, strategy, result) do
     %__MODULE__{
       data: data,

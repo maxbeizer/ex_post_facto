@@ -60,7 +60,7 @@ defmodule ExPostFacto.Result do
           result :: %__MODULE__{},
           index :: integer(),
           datum :: map(),
-          action :: atom()
+          action :: ExPostFacto.action()
         ) :: %__MODULE__{}
   def add_data_point(result, index, datum, action) do
     data_point = DataPoint.new(datum, action, index)
@@ -74,6 +74,11 @@ defmodule ExPostFacto.Result do
     end
   end
 
+  @spec update_result(
+          result :: %__MODULE__{},
+          data_point :: %DataPoint{},
+          action :: ExPostFacto.action()
+        ) :: %__MODULE__{}
   defp update_result(result, data_point, action) do
     %{
       result

@@ -6,12 +6,15 @@ defmodule ExPostFacto do
   """
 
   alias ExPostFacto.{
+    DataPoint,
     InputData,
     Output,
     Result
   }
 
   @actions [:buy, :sell, :close]
+  @type action :: :buy | :sell | :close
+  @type module_function_arguments :: {module :: atom(), function :: atom(), args :: list()}
 
   @doc """
   The main entry point of the library. This function takes in a list of HLOC
@@ -35,8 +38,8 @@ defmodule ExPostFacto do
       {:ok, %ExPostFacto.Output{data: [], result: %ExPostFacto.Result{data_points: [], total_profit_and_loss: 0.0, max_draw_down: 0.0}, strategy: {Noop, :noop, []}}}
   """
   @spec backtest(
-          data :: list(),
-          strategy :: mfa(),
+          data :: [DataPoint.t()],
+          strategy :: module_function_arguments(),
           options :: keyword()
         ) ::
           {:ok, map()} | {:error, String.t()}
@@ -60,7 +63,7 @@ defmodule ExPostFacto do
   @spec apply_strategy(
           {index :: integer(), datum :: map()},
           result :: Result.t(),
-          strategy :: mfa()
+          strategy :: module_function_arguments()
         ) :: Result.t()
   defp apply_strategy({index, datum}, result, {m, f, _a}) do
     action = apply(m, f, [datum])
