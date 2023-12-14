@@ -16,9 +16,45 @@ defmodule ExPostFacto do
   @type action :: :buy | :sell | :close
   @type module_function_arguments :: {module :: atom(), function :: atom(), args :: list()}
 
+  defmodule BacktestError do
+    defexception message: "unable to run backtest"
+  end
+
   @doc """
   The main entry point of the library. This function takes in a list of HLOC
   data and function that will be used to generate buy and sell signals. The
+  function should return `:buy`, `:sell`, `:close` when called. Options may also
+  be passed in, optionns are TBD.
+
+  The function returns output struct or raises an error
+
+  ## Examples
+
+      iex> ExPostFacto.backtest!(nil, {Foo, :bar, []})
+      ** (ExPostFacto.BacktestError) data cannot be nil
+
+      iex> ExPostFacto.backtest!([], nil)
+      ** (ExPostFacto.BacktestError) strategy cannot be nil
+
+      iex> ExPostFacto.backtest!([], {Noop, :noop, []})
+      %ExPostFacto.Output{data: [], result: %ExPostFacto.Result{data_points: [], total_profit_and_loss: 0.0, max_draw_down: 0.0}, strategy: {Noop, :noop, []}}
+  """
+  @spec backtest!(
+          data :: [DataPoint.t()],
+          strategy :: module_function_arguments(),
+          options :: keyword()
+        ) ::
+          Output.t() | no_return()
+  def backtest!(data, strategy, options \\ []) do
+    case backtest(data, strategy, options) do
+      {:ok, output} -> output
+      {:error, error} -> raise BacktestError, message: error
+    end
+  end
+
+  @doc """
+  The other main entry point of the library. This function takes in a list of
+  HLOC data and function that will be used to generate buy and sell signals. The
   function should return `:buy`, `:sell`, `:close` when called. Options may also
   be passed in, optionns are TBD.
 
@@ -42,7 +78,7 @@ defmodule ExPostFacto do
           strategy :: module_function_arguments(),
           options :: keyword()
         ) ::
-          {:ok, map()} | {:error, String.t()}
+          {:ok, Output.t()} | {:error, String.t()}
   def backtest(data, strategy, options \\ [])
   def backtest(nil, _strategy, _options), do: {:error, "data cannot be nil"}
   def backtest(_data, nil, _options), do: {:error, "strategy cannot be nil"}
