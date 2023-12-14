@@ -44,15 +44,23 @@ defmodule ExPostFacto.Result do
             is_position_open: false,
             starting_balance: 0.0,
             total_profit_and_loss: 0.0,
-            max_draw_down: 0.0
+            max_draw_down: 0.0,
+            start_date: nil,
+            end_date: nil
 
   @doc """
   Creates a new result struct.
   """
-  @spec new(starting_balance :: float()) :: %__MODULE__{}
-  def new(starting_balance) do
+  @spec new(
+          starting_balance: float(),
+          start_date: String.t(),
+          end_date: String.t()
+        ) :: %__MODULE__{}
+  def new(options) do
     %__MODULE__{
-      starting_balance: starting_balance
+      starting_balance: Keyword.get(options, :starting_balance, 0.0),
+      start_date: Keyword.get(options, :start_date),
+      end_date: Keyword.get(options, :end_date)
     }
   end
 

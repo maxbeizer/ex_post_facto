@@ -35,11 +35,11 @@ defmodule ExPostFacto do
       iex> ExPostFacto.backtest!(nil, {Foo, :bar, []})
       ** (ExPostFacto.BacktestError) data cannot be nil
 
-      iex> ExPostFacto.backtest!([], nil)
-      ** (ExPostFacto.BacktestError) strategy cannot be nil
+      iex> ExPostFacto.backtest!([], {Foo, :bar, []})
+      ** (ExPostFacto.BacktestError) data cannot be empty
 
-      iex> ExPostFacto.backtest!([], {Noop, :noop, []})
-      %ExPostFacto.Output{data: [], result: %ExPostFacto.Result{data_points: [], total_profit_and_loss: 0.0, max_draw_down: 0.0}, strategy: {Noop, :noop, []}}
+      iex> ExPostFacto.backtest!([%{o: 1.0, h: 2.0, l: 0.5, c: 1.0}], nil)
+      ** (ExPostFacto.BacktestError) strategy cannot be nil
   """
   @spec backtest!(
           data :: [DataPoint.t()],
@@ -69,11 +69,11 @@ defmodule ExPostFacto do
       iex> ExPostFacto.backtest(nil, {Foo, :bar, []})
       {:error, "data cannot be nil"}
 
-      iex> ExPostFacto.backtest([], nil)
-      {:error, "strategy cannot be nil"}
+      iex> ExPostFacto.backtest([], {Foo, :bar, []})
+      {:error, "data cannot be empty"}
 
-      iex> ExPostFacto.backtest([], {Noop, :noop, []})
-      {:ok, %ExPostFacto.Output{data: [], result: %ExPostFacto.Result{data_points: [], total_profit_and_loss: 0.0, max_draw_down: 0.0}, strategy: {Noop, :noop, []}}}
+      iex> ExPostFacto.backtest([%{o: 1.0, h: 2.0, l: 0.5, c: 1.0}], nil)
+      {:error, "strategy cannot be nil"}
   """
   @spec backtest(
           data :: [DataPoint.t()],
@@ -83,10 +83,11 @@ defmodule ExPostFacto do
           {:ok, Output.t()} | {:error, String.t()}
   def backtest(data, strategy, options \\ [])
   def backtest(nil, _strategy, _options), do: {:error, "data cannot be nil"}
+  def backtest([], _, _options), do: {:error, "data cannot be empty"}
   def backtest(_data, nil, _options), do: {:error, "strategy cannot be nil"}
 
   def backtest(data, strategy, options) do
-    result = build_initial_result(options)
+    result = build_initial_result(data, options)
 
     result =
       data
@@ -115,9 +116,17 @@ defmodule ExPostFacto do
     end
   end
 
-  @spec build_initial_result(options :: keyword()) :: Result.t()
-  defp build_initial_result(options) do
-    starting_balance = Keyword.get(options, :starting_balance, 0.0)
-    Result.new(starting_balance)
+  @spec build_initial_result(
+          data :: [DataPoint.t()],
+          options :: keyword()
+        ) :: Result.t()
+  defp build_initial_result(data, options) do
+    start_date = hd(data) |> Map.get(:timestamp)
+    end_date = List.last(data) |> Map.get(:timestamp)
+
+    options
+    |> Keyword.put(:start_date, start_date)
+    |> Keyword.put(:end_date, end_date)
+    |> Result.new()
   end
 end

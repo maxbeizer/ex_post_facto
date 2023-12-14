@@ -15,27 +15,34 @@ defmodule ExPostFactoTest do
     Result
   }
 
+  @basic_data_point [%{o: 1.0, h: 2.0, l: 0.5, c: 1.0}]
+
   test "backtest/3 returns an error when data is nil" do
     assert {:error, "data cannot be nil"} = ExPostFacto.backtest(nil, {Noop, :noop, []})
   end
 
+  test "backtest/3 returns an error when data is empty" do
+    assert {:error, "data cannot be empty"} = ExPostFacto.backtest([], {Noop, :noop, []})
+  end
+
   test "backtest/3 returns an error when strategy is nil" do
-    assert {:error, "strategy cannot be nil"} = ExPostFacto.backtest([], nil)
+    assert {:error, "strategy cannot be nil"} = ExPostFacto.backtest(@basic_data_point, nil)
   end
 
   test "backtest/3 returns an output struct" do
-    assert {:ok, %Output{}} = ExPostFacto.backtest([], {Noop, :noop, []})
+    assert {:ok, %Output{}} =
+             ExPostFacto.backtest(@basic_data_point, {Noop, :noop, []})
   end
 
   test "backtest/3 returns an initial starting balance of 0.0 if not specified" do
-    {:ok, %{result: result}} = ExPostFacto.backtest([], {Noop, :noop, []})
+    {:ok, %{result: result}} = ExPostFacto.backtest(@basic_data_point, {Noop, :noop, []})
 
     assert 0.0 == result.starting_balance
   end
 
   test "backtest/3 allows passing in of an initial starting_balance" do
     {:ok, %{result: result}} =
-      ExPostFacto.backtest([], {Noop, :noop, []}, starting_balance: 100.0)
+      ExPostFacto.backtest(@basic_data_point, {Noop, :noop, []}, starting_balance: 100.0)
 
     assert 100.0 == result.starting_balance
   end
