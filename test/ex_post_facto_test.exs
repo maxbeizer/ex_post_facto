@@ -103,8 +103,8 @@ defmodule ExPostFactoTest do
 
     {:ok, %{result: result}} = ExPostFacto.backtest(example_data, mfa)
 
-    # 1.75 + 0.75 = 2.5
-    assert 2.5 == result.total_profit_and_loss
+    # 1.75 - 0.75 = 1.0
+    assert 1.0 == result.total_profit_and_loss
   end
 
   test "backtest/3 collects P&L from the applied strategy when negative" do
@@ -133,8 +133,8 @@ defmodule ExPostFactoTest do
 
     {:ok, %{result: result}} = ExPostFacto.backtest(example_data, mfa)
 
-    # 2 * (1.75 + 0.75) = 5.0
-    assert 5.0 == result.total_profit_and_loss
+    # 2 * (1.75 - 0.75) = 2.0
+    assert 2.0 == result.total_profit_and_loss
   end
 
   test "backtest/3 handles multiple buy loss points" do
@@ -163,8 +163,8 @@ defmodule ExPostFactoTest do
 
     {:ok, %{result: result}} = ExPostFacto.backtest(example_data, mfa)
 
-    # 1.75 + 0.75 = 2.5
-    assert 2.5 == result.total_profit_and_loss
+    # 1.75 + 0.75 = 1.0
+    assert 1.0 == result.total_profit_and_loss
   end
 
   test "backtest/3 handles sells for loss" do
@@ -193,8 +193,8 @@ defmodule ExPostFactoTest do
 
     {:ok, %{result: result}} = ExPostFacto.backtest(example_data, mfa)
 
-    # 2 * (1.75 + 0.75) = 5.0
-    assert 5.0 == result.total_profit_and_loss
+    # 2 * (1.75 - 0.75) = 2.0
+    assert 2.0 == result.total_profit_and_loss
   end
 
   test "backtest/3 handles multiple sell loss points" do
