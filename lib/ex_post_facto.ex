@@ -97,7 +97,7 @@ defmodule ExPostFacto do
   end
 
   @spec apply_strategy(
-          {index :: integer(), datum :: map()},
+          {index :: non_neg_integer(), datum :: DataPoint.t()},
           result :: Result.t(),
           strategy :: module_function_arguments()
         ) :: Result.t()
