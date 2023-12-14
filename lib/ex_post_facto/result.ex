@@ -56,7 +56,7 @@ defmodule ExPostFacto.Result do
           start_date: String.t(),
           end_date: String.t()
         ) :: %__MODULE__{}
-  def new(options) do
+  def new(options \\ []) do
     %__MODULE__{
       starting_balance: Keyword.get(options, :starting_balance, 0.0),
       start_date: Keyword.get(options, :start_date),

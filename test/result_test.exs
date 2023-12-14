@@ -8,6 +8,30 @@ defmodule ExPostFactoResultTest do
     Result
   }
 
+  test "new/1 returns a result struct without options" do
+    assert %Result{} = Result.new()
+  end
+
+  test "new/1 sets a default starting balance of 0.0" do
+    assert %{starting_balance: 0.0} = Result.new()
+  end
+
+  test "new/1 allows the passing of a starting balance as a KW options" do
+    assert %{starting_balance: 100.0} = Result.new(starting_balance: 100.0)
+  end
+
+  test "new/1 allows the passing of a start_date" do
+    assert %{start_date: "2018-01-01"} = Result.new(start_date: "2018-01-01")
+  end
+
+  test "new/1 allows the passing of a end_date" do
+    assert %{end_date: "2018-01-01"} = Result.new(end_date: "2018-01-01")
+  end
+
+  test "new/1 defaults start and end to nil" do
+    assert %{start_date: nil, end_date: nil} = Result.new()
+  end
+
   test "compile/2 calculates total profit and loss when zero data points" do
     result = %Result{data_points: [], is_position_open: false, starting_balance: 0.0}
 
