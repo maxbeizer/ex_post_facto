@@ -32,6 +32,30 @@ defmodule ExPostFactoResultTest do
     assert %{duration: 1} = Result.new(start_date: "2018-01-01", end_date: "2018-01-02")
   end
 
+  test "new/1 returns nil when no start passed in" do
+    assert %{duration: nil} = Result.new(end_date: "2018-01-02")
+  end
+
+  test "new/1 returns nil when no end passed in" do
+    assert %{duration: nil} = Result.new(start_date: "2018-01-01")
+  end
+
+  test "new/1 calculates the duration with date times which is zero for less than a day" do
+    assert %{duration: 0} =
+             Result.new(
+               start_date: "2023-12-15T22:15:27.211832Z",
+               end_date: "2023-12-15T23:15:27.211832Z"
+             )
+  end
+
+  test "new/1 calculates the duration with date times on a daily magnitude" do
+    assert %{duration: 14} =
+             Result.new(
+               start_date: "2023-12-01T22:15:27.211832Z",
+               end_date: "2023-12-15T22:15:27.211832Z"
+             )
+  end
+
   test "new/1 defaults start and end to nil" do
     assert %{start_date: nil, end_date: nil} = Result.new()
   end

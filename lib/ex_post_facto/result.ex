@@ -166,7 +166,13 @@ defmodule ExPostFacto.Result do
       Date.diff(end_date, start_date)
     else
       _ ->
-        nil
+        case {DateTime.from_iso8601(start_date), DateTime.from_iso8601(end_date)} do
+          {{:ok, start_date_time, _}, {:ok, end_date_time, _}} ->
+            DateTime.diff(end_date_time, start_date_time, :day)
+
+          _ ->
+            nil
+        end
     end
   end
 
