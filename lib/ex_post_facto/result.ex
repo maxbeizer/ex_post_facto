@@ -47,7 +47,8 @@ defmodule ExPostFacto.Result do
             max_draw_down: 0.0,
             start_date: nil,
             end_date: nil,
-            duration: nil
+            duration: nil,
+            trades_count: 0
 
   @doc """
   Creates a new result struct.
@@ -96,7 +97,8 @@ defmodule ExPostFacto.Result do
     %{
       result
       | data_points: [data_point | result.data_points],
-        is_position_open: position_open?(action)
+        is_position_open: position_open?(action),
+        trades_count: calculate_trade_count(result, action)
     }
   end
 
@@ -177,4 +179,7 @@ defmodule ExPostFacto.Result do
   end
 
   defp duration(_start_date, _end_date), do: nil
+
+  defp calculate_trade_count(result, :close), do: result.trades_count + 1
+  defp calculate_trade_count(result, _), do: result.trades_count
 end

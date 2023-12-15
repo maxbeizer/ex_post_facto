@@ -60,6 +60,44 @@ defmodule ExPostFactoResultTest do
     assert %{start_date: nil, end_date: nil} = Result.new()
   end
 
+  test "counts the number of closed trades when all closed" do
+    data_points = [
+      DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 75.0, c: 85.0}), :buy, 2)
+    ]
+
+    result =
+      %Result{data_points: data_points, is_position_open: true}
+      |> Result.add_data_point(3, %{}, :close)
+
+    assert 1 == result.trades_count
+  end
+
+  test "counts the number of closed trades (multiple) when all closed" do
+    data_points = [
+      DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 75.0, c: 85.0}), :buy, 2),
+      DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 75.0, c: 85.0}), :close, 1),
+      DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 75.0, c: 85.0}), :buy, 0)
+    ]
+
+    # start with one trade count from the data above
+    result =
+      %Result{data_points: data_points, is_position_open: true, trades_count: 1}
+      |> Result.add_data_point(3, %{}, :close)
+
+    assert 2 == result.trades_count
+  end
+
+  test "counts the number of closed trades ignores open trades" do
+    data_points = []
+
+    result =
+      %Result{data_points: data_points, is_position_open: false}
+      # only one open buy
+      |> Result.add_data_point(3, %{}, :buy)
+
+    assert 0 == result.trades_count
+  end
+
   test "compile/2 calculates total profit and loss when zero data points" do
     result = %Result{data_points: [], is_position_open: false, starting_balance: 0.0}
 
