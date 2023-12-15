@@ -46,7 +46,8 @@ defmodule ExPostFacto.Result do
             total_profit_and_loss: 0.0,
             max_draw_down: 0.0,
             start_date: nil,
-            end_date: nil
+            end_date: nil,
+            duration: nil
 
   @doc """
   Creates a new result struct.
@@ -57,10 +58,14 @@ defmodule ExPostFacto.Result do
           end_date: String.t()
         ) :: %__MODULE__{}
   def new(options \\ []) do
+    start_date = Keyword.get(options, :start_date)
+    end_date = Keyword.get(options, :end_date)
+
     %__MODULE__{
       starting_balance: Keyword.get(options, :starting_balance, 0.0),
-      start_date: Keyword.get(options, :start_date),
-      end_date: Keyword.get(options, :end_date)
+      start_date: start_date,
+      end_date: end_date,
+      duration: duration(start_date, end_date)
     }
   end
 
@@ -153,4 +158,17 @@ defmodule ExPostFacto.Result do
 
     do_calculate_profit_and_loss!(rest, computed_profit_and_loss)
   end
+
+  @spec duration(start_date :: String.t(), end_date :: String.t()) :: non_neg_integer() | nil
+  defp duration(start_date, end_date) when not is_nil(start_date) and not is_nil(end_date) do
+    with {:ok, start_date} <- Date.from_iso8601(start_date),
+         {:ok, end_date} <- Date.from_iso8601(end_date) do
+      Date.diff(end_date, start_date)
+    else
+      _ ->
+        nil
+    end
+  end
+
+  defp duration(_start_date, _end_date), do: nil
 end

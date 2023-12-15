@@ -28,6 +28,10 @@ defmodule ExPostFactoResultTest do
     assert %{end_date: "2018-01-01"} = Result.new(end_date: "2018-01-01")
   end
 
+  test "new/1 calculates the duration if start and end are passed in" do
+    assert %{duration: 1} = Result.new(start_date: "2018-01-01", end_date: "2018-01-02")
+  end
+
   test "new/1 defaults start and end to nil" do
     assert %{start_date: nil, end_date: nil} = Result.new()
   end
