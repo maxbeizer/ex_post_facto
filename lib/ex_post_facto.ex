@@ -12,8 +12,8 @@ defmodule ExPostFacto do
     Result
   }
 
-  @actions [:buy, :sell, :close]
-  @type action :: :buy | :sell | :close
+  @actions [:buy, :sell, :close_buy, :close_sell]
+  @type action :: :buy | :sell | :close_buy | :close_sell
   @type module_function_arguments :: {module :: atom(), function :: atom(), args :: list()}
 
   defmodule BacktestError do

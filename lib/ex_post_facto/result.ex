@@ -113,20 +113,32 @@ defmodule ExPostFacto.Result do
   end
 
   @spec add_data_point?(result :: %__MODULE__{}, action :: ExPostFacto.action()) :: boolean()
-  defp add_data_point?(%{is_position_open: true}, :close), do: true
+  defp add_data_point?(%{is_position_open: true}, :close_buy), do: true
+  defp add_data_point?(%{is_position_open: true}, :close_sell), do: true
   defp add_data_point?(%{is_position_open: true}, _), do: false
-  defp add_data_point?(%{is_position_open: false}, :close), do: false
+  defp add_data_point?(%{is_position_open: false}, :close_buy), do: false
+  defp add_data_point?(%{is_position_open: false}, :close_sell), do: false
   defp add_data_point?(%{is_position_open: false}, _), do: true
 
   @spec position_open?(action :: ExPostFacto.action()) :: boolean()
-  defp position_open?(:close), do: false
+  defp position_open?(:close_buy), do: false
+  defp position_open?(:close_sell), do: false
   defp position_open?(_), do: true
 
   @spec calculate_trade_stats!(result :: %__MODULE__{}) :: keyword() | no_return()
   defp calculate_trade_stats!(result) do
     [
-      {:total_profit_and_loss, TotalProfitAndLoss.calculate!(result.data_points, 0.0)}
+      {:total_profit_and_loss, TotalProfitAndLoss.calculate!(result.data_points, 0.0)},
+      {:win_rate, calculate_win_rate(result)}
     ]
+  end
+
+  defp calculate_win_rate(%{trades_count: 0}), do: 0.0
+
+  defp calculate_win_rate(%{trades_count: trades_count, data_points: data_points}) do
+    win_count = trades_count
+
+    win_count / trades_count * 100.0
   end
 
   @spec duration(start_date :: String.t(), end_date :: String.t()) :: non_neg_integer() | nil
@@ -148,7 +160,8 @@ defmodule ExPostFacto.Result do
 
   defp duration(_start_date, _end_date), do: nil
 
-  defp calculate_trade_count(result, :close), do: result.trades_count + 1
+  defp calculate_trade_count(result, :close_buy), do: result.trades_count + 1
+  defp calculate_trade_count(result, :close_sell), do: result.trades_count + 1
   defp calculate_trade_count(result, _), do: result.trades_count
 
   defmodule ResultCalculationError, do: defexception(message: "Error calculating result")

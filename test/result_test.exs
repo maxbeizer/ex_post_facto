@@ -67,7 +67,7 @@ defmodule ExPostFactoResultTest do
 
     result =
       %Result{data_points: data_points, is_position_open: true}
-      |> Result.add_data_point(3, %{}, :close)
+      |> Result.add_data_point(3, %{}, :close_buy)
 
     assert 1 == result.trades_count
   end
@@ -75,14 +75,14 @@ defmodule ExPostFactoResultTest do
   test "counts the number of closed trades (multiple) when all closed" do
     data_points = [
       DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 75.0, c: 85.0}), :buy, 2),
-      DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 75.0, c: 85.0}), :close, 1),
+      DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 75.0, c: 85.0}), :close_buy, 1),
       DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 75.0, c: 85.0}), :buy, 0)
     ]
 
     # start with one trade count from the data above
     result =
       %Result{data_points: data_points, is_position_open: true, trades_count: 1}
-      |> Result.add_data_point(3, %{}, :close)
+      |> Result.add_data_point(3, %{}, :close_buy)
 
     assert 2 == result.trades_count
   end
@@ -113,7 +113,7 @@ defmodule ExPostFactoResultTest do
 
   test "compile/2 calculates total profit when data points exist with buy" do
     data_points = [
-      DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 75.0, c: 85.0}), :close, 1),
+      DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 75.0, c: 85.0}), :close_buy, 1),
       DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 50.0, c: 75.0}), :buy, 0)
     ]
 
@@ -131,7 +131,7 @@ defmodule ExPostFactoResultTest do
 
   test "compile/2 calculates total loss when data points exist with buy" do
     data_points = [
-      DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 75.0, c: 75.0}), :close, 1),
+      DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 75.0, c: 75.0}), :close_buy, 1),
       DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 50.0, c: 85.0}), :buy, 0)
     ]
 
@@ -149,7 +149,7 @@ defmodule ExPostFactoResultTest do
 
   test "compile/2 calculates total profit when data points exist with sell" do
     data_points = [
-      DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 75.0, c: 75.0}), :close, 1),
+      DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 75.0, c: 75.0}), :close_sell, 1),
       DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 50.0, c: 85.0}), :sell, 0)
     ]
 
@@ -167,7 +167,7 @@ defmodule ExPostFactoResultTest do
 
   test "compile/2 calculates total loss when data points exist with sell" do
     data_points = [
-      DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 75.0, c: 85.0}), :close, 1),
+      DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 75.0, c: 85.0}), :close_sell, 1),
       DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 50.0, c: 75.0}), :sell, 0)
     ]
 
