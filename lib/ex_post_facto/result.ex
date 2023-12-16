@@ -4,30 +4,6 @@ defmodule ExPostFacto.Result do
   """
   alias ExPostFacto.DataPoint
 
-  defmodule ResultCalculationError do
-    defexception message: "Error calculating result"
-  end
-
-  defimpl Collectable, for: ExPostFacto.Result do
-    @spec into(result :: struct()) :: {struct(), (any(), :done | :halt | {any(), any()} -> any())}
-    def into(result) do
-      collector_fun = fn
-        result_struct, {:cont, {k, v}} ->
-          Map.replace(result_struct, k, v)
-
-        result_struct, :done ->
-          result_struct
-
-        _result_struct, :halt ->
-          :ok
-      end
-
-      initial_acc = result
-
-      {initial_acc, collector_fun}
-    end
-  end
-
   # TODOs:
   # - make this concurrent
   # - fill out data similar to backtesting output
@@ -80,11 +56,12 @@ defmodule ExPostFacto.Result do
           end_date: String.t()
         ) :: %__MODULE__{}
   def new(options \\ []) do
+    starting_balance = Keyword.get(options, :starting_balance, 0.0)
     start_date = Keyword.get(options, :start_date)
     end_date = Keyword.get(options, :end_date)
 
     %__MODULE__{
-      starting_balance: Keyword.get(options, :starting_balance, 0.0),
+      starting_balance: starting_balance,
       start_date: start_date,
       end_date: end_date,
       duration: duration(start_date, end_date)
@@ -141,7 +118,9 @@ defmodule ExPostFacto.Result do
 
   @spec calculate_trade_stats!(result :: %__MODULE__{}) :: keyword() | no_return()
   defp calculate_trade_stats!(result) do
-    [{:total_profit_and_loss, do_calculate_profit_and_loss!(result.data_points, 0.0)}]
+    [
+      {:total_profit_and_loss, do_calculate_profit_and_loss!(result.data_points, 0.0)}
+    ]
   end
 
   @spec do_calculate_profit_and_loss!(
@@ -206,4 +185,26 @@ defmodule ExPostFacto.Result do
 
   defp calculate_trade_count(result, :close), do: result.trades_count + 1
   defp calculate_trade_count(result, _), do: result.trades_count
+
+  defmodule ResultCalculationError, do: defexception(message: "Error calculating result")
+
+  defimpl Collectable, for: ExPostFacto.Result do
+    @spec into(result :: struct()) :: {struct(), (any(), :done | :halt | {any(), any()} -> any())}
+    def into(result) do
+      collector_fun = fn
+        result_struct, {:cont, {k, v}} ->
+          Map.replace(result_struct, k, v)
+
+        result_struct, :done ->
+          result_struct
+
+        _result_struct, :halt ->
+          :ok
+      end
+
+      initial_acc = result
+
+      {initial_acc, collector_fun}
+    end
+  end
 end
