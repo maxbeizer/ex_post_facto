@@ -2,10 +2,10 @@ defmodule ExPostFacto.Result do
   @moduledoc """
   The result contains the output of applying a strategy to a set of data.
   """
-  alias ExPostFacto.TradeStats.WinRate
   alias ExPostFacto.DataPoint
 
   alias ExPostFacto.TradeStats.{
+    CompilePairs,
     TotalProfitAndLoss,
     WinRate
   }
@@ -51,7 +51,8 @@ defmodule ExPostFacto.Result do
             end_date: nil,
             duration: nil,
             trades_count: 0,
-            win_rate: 0.0
+            win_rate: 0.0,
+            trade_pairs: []
 
   @doc """
   Creates a new result struct.
@@ -110,7 +111,11 @@ defmodule ExPostFacto.Result do
   def compile(result, options \\ [])
 
   def compile(result, _options) do
-    trade_stats = calculate_trade_stats!(result)
+    trade_stats =
+      result
+      |> CompilePairs.call!()
+      |> calculate_trade_stats!()
+
     Enum.into(trade_stats, result)
   end
 
