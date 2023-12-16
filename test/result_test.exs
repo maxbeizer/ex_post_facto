@@ -99,14 +99,16 @@ defmodule ExPostFactoResultTest do
   end
 
   test "compile/2 calculates total profit and loss when zero data points" do
-    result = %Result{data_points: [], is_position_open: false, starting_balance: 0.0}
+    result =
+      %Result{data_points: [], is_position_open: false, starting_balance: 0.0}
+      |> Result.compile()
 
-    assert Result.compile(result, []) == %Result{
+    assert %Result{
              data_points: [],
              is_position_open: false,
              starting_balance: 0.0,
              total_profit_and_loss: 0.0
-           }
+           } == result
   end
 
   test "compile/2 calculates total profit when data points exist with buy" do
@@ -115,14 +117,16 @@ defmodule ExPostFactoResultTest do
       DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 50.0, c: 75.0}), :buy, 0)
     ]
 
-    result = %Result{data_points: data_points, is_position_open: false, starting_balance: 100.0}
+    result =
+      %Result{data_points: data_points, is_position_open: false, starting_balance: 100.0}
+      |> Result.compile()
 
-    assert Result.compile(result, []) == %Result{
+    assert %Result{
              data_points: data_points,
              is_position_open: false,
              starting_balance: 100.0,
              total_profit_and_loss: 10.0
-           }
+           } == result
   end
 
   test "compile/2 calculates total loss when data points exist with buy" do
@@ -131,14 +135,16 @@ defmodule ExPostFactoResultTest do
       DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 50.0, c: 85.0}), :buy, 0)
     ]
 
-    result = %Result{data_points: data_points, is_position_open: false, starting_balance: 100.0}
+    result =
+      %Result{data_points: data_points, is_position_open: false, starting_balance: 100.0}
+      |> Result.compile()
 
-    assert Result.compile(result, []) == %Result{
+    assert %Result{
              data_points: data_points,
              is_position_open: false,
              starting_balance: 100.0,
              total_profit_and_loss: -10.0
-           }
+           } == result
   end
 
   test "compile/2 calculates total profit when data points exist with sell" do
@@ -147,14 +153,16 @@ defmodule ExPostFactoResultTest do
       DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 50.0, c: 85.0}), :sell, 0)
     ]
 
-    result = %Result{data_points: data_points, is_position_open: false, starting_balance: 100.0}
+    result =
+      %Result{data_points: data_points, is_position_open: false, starting_balance: 100.0}
+      |> Result.compile()
 
-    assert Result.compile(result, []) == %Result{
+    assert %Result{
              data_points: data_points,
              is_position_open: false,
              starting_balance: 100.0,
              total_profit_and_loss: 10.0
-           }
+           } == result
   end
 
   test "compile/2 calculates total loss when data points exist with sell" do
@@ -163,13 +171,25 @@ defmodule ExPostFactoResultTest do
       DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 50.0, c: 75.0}), :sell, 0)
     ]
 
-    result = %Result{data_points: data_points, is_position_open: false, starting_balance: 100.0}
+    result =
+      %Result{data_points: data_points, is_position_open: false, starting_balance: 100.0}
+      |> Result.compile()
 
-    assert Result.compile(result, []) == %Result{
+    assert %Result{
              data_points: data_points,
              is_position_open: false,
              starting_balance: 100.0,
              total_profit_and_loss: -10.0
-           }
+           } == result
+  end
+
+  test "compile/2 calculates the win rate as 0.0 when no data points" do
+    data_points = []
+
+    result =
+      %Result{data_points: data_points}
+      |> Result.compile()
+
+    assert 0.0 == result.win_rate
   end
 end

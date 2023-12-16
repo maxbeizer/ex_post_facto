@@ -105,6 +105,8 @@ defmodule ExPostFacto.Result do
   end
 
   @spec compile(result :: %__MODULE__{}, options :: keyword()) :: %__MODULE__{}
+  def compile(result, options \\ [])
+
   def compile(result, _options) do
     trade_stats = calculate_trade_stats!(result)
     Enum.into(trade_stats, result)
