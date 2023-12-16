@@ -227,4 +227,33 @@ defmodule ExPostFactoResultTest do
 
     assert 50.0 == result.win_rate
   end
+
+  test "compile/2 calculates best win by percentage as zero when there are no data points" do
+    result =
+      %Result{data_points: []}
+      |> Result.compile()
+
+    assert 0.0 == result.best_trade_by_percentage
+  end
+
+  test "compile/2 calculates best win by percentage as zero when there are no winners" do
+    result =
+      %Result{data_points: [], starting_balance: 100.0}
+      |> Result.add_data_point(2, %{high: 100.0, low: 50.0, open: 75.0, close: 85.0}, :buy)
+      |> Result.add_data_point(3, %{high: 100.0, low: 50.0, open: 75.0, close: 75.0}, :close_buy)
+      |> Result.compile()
+
+    assert 0.0 == result.best_trade_by_percentage
+  end
+
+  @tag :focus
+  test "compile/2 calculates best win by percentage when there are winners" do
+    result =
+      %Result{data_points: [], starting_balance: 100.0}
+      |> Result.add_data_point(2, %{high: 100.0, low: 50.0, open: 75.0, close: 75.0}, :buy)
+      |> Result.add_data_point(3, %{high: 100.0, low: 50.0, open: 75.0, close: 85.0}, :close_buy)
+      |> Result.compile()
+
+    assert 10.0 == result.best_trade_by_percentage
+  end
 end

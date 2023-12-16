@@ -5,6 +5,7 @@ defmodule ExPostFacto.Result do
   alias ExPostFacto.DataPoint
 
   alias ExPostFacto.TradeStats.{
+    BestTradeByPercentage,
     CompilePairs,
     TotalProfitAndLoss,
     WinRate
@@ -52,7 +53,8 @@ defmodule ExPostFacto.Result do
             duration: nil,
             trades_count: 0,
             win_rate: 0.0,
-            trade_pairs: []
+            trade_pairs: [],
+            best_trade_by_percentage: 0.0
 
   @doc """
   Creates a new result struct.
@@ -136,7 +138,9 @@ defmodule ExPostFacto.Result do
   defp calculate_trade_stats!(result) do
     [
       {:total_profit_and_loss, TotalProfitAndLoss.calculate!(result.data_points, 0.0)},
-      {:win_rate, WinRate.calculate!(result)}
+      {:win_rate, WinRate.calculate!(result)},
+      # TODO to work this needs the calculated profit and loss
+      {:best_trade_by_percentage, BestTradeByPercentage.calculate!(result)}
     ]
   end
 
