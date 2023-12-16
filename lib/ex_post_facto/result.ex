@@ -8,6 +8,26 @@ defmodule ExPostFacto.Result do
     defexception message: "Error calculating result"
   end
 
+  defimpl Collectable, for: ExPostFacto.Result do
+    @spec into(result :: struct()) :: {struct(), (any(), :done | :halt | {any(), any()} -> any())}
+    def into(result) do
+      collector_fun = fn
+        result_struct, {:cont, {k, v}} ->
+          Map.replace(result_struct, k, v)
+
+        result_struct, :done ->
+          result_struct
+
+        _result_struct, :halt ->
+          :ok
+      end
+
+      initial_acc = result
+
+      {initial_acc, collector_fun}
+    end
+  end
+
   # TODOs:
   # - make this concurrent
   # - fill out data similar to backtesting output
@@ -48,7 +68,8 @@ defmodule ExPostFacto.Result do
             start_date: nil,
             end_date: nil,
             duration: nil,
-            trades_count: 0
+            trades_count: 0,
+            win_rate: 0.0
 
   @doc """
   Creates a new result struct.
@@ -104,20 +125,23 @@ defmodule ExPostFacto.Result do
 
   @spec compile(result :: %__MODULE__{}, options :: keyword()) :: %__MODULE__{}
   def compile(result, _options) do
-    %{result | total_profit_and_loss: calculate_profit_and_loss!(result)}
+    trade_stats = calculate_trade_stats!(result)
+    Enum.into(trade_stats, result)
   end
 
+  @spec add_data_point?(result :: %__MODULE__{}, action :: ExPostFacto.action()) :: boolean()
   defp add_data_point?(%{is_position_open: true}, :close), do: true
   defp add_data_point?(%{is_position_open: true}, _), do: false
   defp add_data_point?(%{is_position_open: false}, :close), do: false
   defp add_data_point?(%{is_position_open: false}, _), do: true
 
+  @spec position_open?(action :: ExPostFacto.action()) :: boolean()
   defp position_open?(:close), do: false
   defp position_open?(_), do: true
 
-  @spec calculate_profit_and_loss!(result :: %__MODULE__{}) :: float() | no_return()
-  defp calculate_profit_and_loss!(result) do
-    do_calculate_profit_and_loss!(result.data_points, 0.0)
+  @spec calculate_trade_stats!(result :: %__MODULE__{}) :: keyword() | no_return()
+  defp calculate_trade_stats!(result) do
+    [{:total_profit_and_loss, do_calculate_profit_and_loss!(result.data_points, 0.0)}]
   end
 
   @spec do_calculate_profit_and_loss!(
