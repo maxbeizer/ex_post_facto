@@ -192,4 +192,28 @@ defmodule ExPostFactoResultTest do
 
     assert 0.0 == result.win_rate
   end
+
+  test "compile/2 calculates the win rate as 0.0 when no wins" do
+    data_points = [
+      DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 75.0, c: 85.0}), :close_sell, 1),
+      DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 50.0, c: 75.0}), :sell, 0)
+    ]
+
+    result =
+      %Result{data_points: data_points}
+      |> Result.compile()
+
+    assert 0.0 == result.win_rate
+  end
+
+  @tag :focus
+  test "compile/2 calculates the win rate as 100.0 when all wins" do
+    result =
+      %Result{data_points: []}
+      |> Result.add_data_point(0, %{high: 100.0, low: 50.0, open: 75.0, close: 75.0}, :buy)
+      |> Result.add_data_point(1, %{high: 100.0, low: 50.0, open: 75.0, close: 85.0}, :close_buy)
+      |> Result.compile()
+
+    assert 100.0 == result.win_rate
+  end
 end

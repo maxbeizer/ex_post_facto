@@ -2,10 +2,12 @@ defmodule ExPostFacto.Result do
   @moduledoc """
   The result contains the output of applying a strategy to a set of data.
   """
+  alias ExPostFacto.TradeStats.WinRate
   alias ExPostFacto.DataPoint
 
   alias ExPostFacto.TradeStats.{
-    TotalProfitAndLoss
+    TotalProfitAndLoss,
+    WinRate
   }
 
   # TODOs:
@@ -129,16 +131,8 @@ defmodule ExPostFacto.Result do
   defp calculate_trade_stats!(result) do
     [
       {:total_profit_and_loss, TotalProfitAndLoss.calculate!(result.data_points, 0.0)},
-      {:win_rate, calculate_win_rate(result)}
+      {:win_rate, WinRate.calculate!(result)}
     ]
-  end
-
-  defp calculate_win_rate(%{trades_count: 0}), do: 0.0
-
-  defp calculate_win_rate(%{trades_count: trades_count, data_points: data_points}) do
-    win_count = trades_count
-
-    win_count / trades_count * 100.0
   end
 
   @spec duration(start_date :: String.t(), end_date :: String.t()) :: non_neg_integer() | nil
