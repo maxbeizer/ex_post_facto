@@ -4,6 +4,10 @@ defmodule ExPostFacto.Result do
   """
   alias ExPostFacto.DataPoint
 
+  alias ExPostFacto.TradeStats.{
+    TotalProfitAndLoss
+  }
+
   # TODOs:
   # - make this concurrent
   # - fill out data similar to backtesting output
@@ -119,49 +123,8 @@ defmodule ExPostFacto.Result do
   @spec calculate_trade_stats!(result :: %__MODULE__{}) :: keyword() | no_return()
   defp calculate_trade_stats!(result) do
     [
-      {:total_profit_and_loss, do_calculate_profit_and_loss!(result.data_points, 0.0)}
+      {:total_profit_and_loss, TotalProfitAndLoss.calculate!(result.data_points, 0.0)}
     ]
-  end
-
-  @spec do_calculate_profit_and_loss!(
-          data_points :: list(),
-          total_profit_and_loss :: float()
-        ) :: float() | no_return()
-  defp do_calculate_profit_and_loss!([], total_profit_and_loss), do: total_profit_and_loss
-
-  defp do_calculate_profit_and_loss!([_single_data_point], total_profit_and_loss),
-    do: total_profit_and_loss
-
-  defp do_calculate_profit_and_loss!([head, previous | rest], total_profit_and_loss) do
-    %{datum: %{close: head_close}, action: head_action} = head
-    %{datum: %{close: previous_close}, action: previous_action} = previous
-
-    computed_profit_and_loss =
-      cond do
-        head_action == :close and previous_action == :buy and head_close > previous_close ->
-          total_profit_and_loss + head_close - previous_close
-
-        head_action == :close and previous_action == :buy and head_close < previous_close ->
-          total_profit_and_loss + head_close - previous_close
-
-        head_action == :close and previous_action == :buy and head_close == previous_close ->
-          total_profit_and_loss
-
-        head_action == :close and previous_action == :sell and head_close > previous_close ->
-          total_profit_and_loss + previous_close - head_close
-
-        head_action == :close and previous_action == :sell and head_close < previous_close ->
-          total_profit_and_loss + previous_close - head_close
-
-        head_action == :close and previous_action == :sell and head_close == previous_close ->
-          total_profit_and_loss
-
-        true ->
-          raise ResultCalculationError,
-                "Unknown action combination: #{inspect(head_action)} and #{inspect(previous_action)}"
-      end
-
-    do_calculate_profit_and_loss!(rest, computed_profit_and_loss)
   end
 
   @spec duration(start_date :: String.t(), end_date :: String.t()) :: non_neg_integer() | nil
