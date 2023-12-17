@@ -9,7 +9,8 @@ defmodule ExPostFacto.InputData do
             open: 0.0,
             close: 0.0,
             volume: 0.0,
-            timestamp: nil
+            timestamp: nil,
+            other: nil
 
   defmodule InvalidInputDataError do
     defexception message: "Invalid InputData"
@@ -19,6 +20,7 @@ defmodule ExPostFacto.InputData do
   Creates a new! InputData struct.
   """
   @spec new!(%{
+          optional(:other) => any(),
           high: float(),
           low: float(),
           open: float(),
@@ -26,6 +28,20 @@ defmodule ExPostFacto.InputData do
           volume: float() | nil,
           timestamp: String.t() | nil
         }) :: %__MODULE__{}
+
+  def new!(%{high: h, low: l, open: o, close: c, volume: v, timestamp: t, other: other}) do
+    # TODO convert timestamp to DateTime
+    %__MODULE__{
+      high: h,
+      low: l,
+      open: o,
+      close: c,
+      volume: v,
+      timestamp: t,
+      other: other
+    }
+  end
+
   def new!(%{high: h, low: l, open: o, close: c, volume: v, timestamp: t}) do
     # TODO convert timestamp to DateTime
     %__MODULE__{
@@ -40,106 +56,38 @@ defmodule ExPostFacto.InputData do
 
   def new!(_), do: raise(InvalidInputDataError)
 
-  @spec munge(map()) :: %__MODULE__{}
-  def munge(%{
-        high: high,
-        low: low,
-        open: open,
-        close: close,
-        volume: volume,
-        timestamp: timestamp
-      }) do
-    new!(%{
+  @spec munge(%{
+          optional(:high) => float(),
+          optional(:h) => float(),
+          optional(:low) => float(),
+          optional(:l) => float(),
+          optional(:open) => float(),
+          optional(:o) => float(),
+          optional(:close) => float(),
+          optional(:c) => float(),
+          optional(:timestamp) => float(),
+          optional(:t) => float(),
+          optional(:volume) => float(),
+          optional(:v) => float(),
+          optional(:other) => any()
+        }) :: %__MODULE__{}
+  def munge(data) do
+    high = Map.get(data, :high) || Map.get(data, :h)
+    low = Map.get(data, :low) || Map.get(data, :l)
+    open = Map.get(data, :open) || Map.get(data, :o)
+    close = Map.get(data, :close) || Map.get(data, :c)
+    volume = Map.get(data, :volume) || Map.get(data, :v)
+    timestamp = Map.get(data, :timestamp) || Map.get(data, :t)
+    other = Map.get(data, :other)
+
+    %__MODULE__{
       high: high,
       low: low,
       open: open,
       close: close,
+      timestamp: timestamp,
       volume: volume,
-      timestamp: timestamp
-    })
-  end
-
-  def munge(%{
-        high: high,
-        low: low,
-        open: open,
-        close: close,
-        volume: volume
-      }) do
-    new!(%{
-      high: high,
-      low: low,
-      open: open,
-      close: close,
-      volume: volume,
-      timestamp: nil
-    })
-  end
-
-  def munge(%{
-        high: high,
-        low: low,
-        open: open,
-        close: close
-      }) do
-    new!(%{
-      high: high,
-      low: low,
-      open: open,
-      close: close,
-      volume: nil,
-      timestamp: nil
-    })
-  end
-
-  def munge(%{
-        h: high,
-        l: low,
-        o: open,
-        c: close
-      }) do
-    new!(%{
-      high: high,
-      low: low,
-      open: open,
-      close: close,
-      volume: nil,
-      timestamp: nil
-    })
-  end
-
-  def munge(%{
-        h: high,
-        l: low,
-        o: open,
-        c: close,
-        v: volume
-      }) do
-    new!(%{
-      high: high,
-      low: low,
-      open: open,
-      close: close,
-      volume: volume,
-      timestamp: nil
-    })
-  end
-
-  def munge(%{
-        h: high,
-        l: low,
-        o: open,
-        c: close,
-        v: volume,
-        t: timestamp
-      }) do
-    new!(%{
-      high: high,
-      low: low,
-      open: open,
-      close: close,
-      volume: volume,
-      timestamp: timestamp
-    })
+      other: other
+    }
   end
 end

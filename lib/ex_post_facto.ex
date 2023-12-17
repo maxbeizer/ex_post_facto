@@ -105,7 +105,7 @@ defmodule ExPostFacto do
           strategy :: module_function_arguments()
         ) :: Result.t()
   defp apply_strategy({index, datum}, result, {m, f, _a}) do
-    action = apply(m, f, [datum])
+    action = apply(m, f, [datum, result])
 
     cond do
       action in @actions ->

@@ -123,4 +123,73 @@ defmodule ExPostFactoInputDataTest do
 
     assert %InputData{} = result
   end
+
+  @tag :foo
+  test "munge/1 handles high low open close timestamp other maps" do
+    result =
+      InputData.munge(%{
+        high: 1.0,
+        low: 1.0,
+        open: 1.0,
+        close: 1.0,
+        timestamp: "2018-01-01",
+        other: "other"
+      })
+
+    assert %InputData{
+             high: 1.0,
+             low: 1.0,
+             open: 1.0,
+             close: 1.0,
+             volume: nil,
+             timestamp: "2018-01-01",
+             other: "other"
+           } == result
+  end
+
+  test "munge/1 handles high low open close volume timestamp other maps" do
+    result =
+      InputData.munge(%{
+        high: 1.0,
+        low: 1.0,
+        open: 1.0,
+        close: 1.0,
+        volume: 1.0,
+        timestamp: "2018-01-01",
+        other: "other"
+      })
+
+    assert %InputData{
+             high: 1.0,
+             low: 1.0,
+             open: 1.0,
+             close: 1.0,
+             volume: 1.0,
+             timestamp: "2018-01-01",
+             other: "other"
+           } == result
+  end
+
+  test "munge/1 handles hlocvt other maps" do
+    result =
+      InputData.munge(%{
+        h: 1.0,
+        l: 1.0,
+        o: 1.0,
+        c: 1.0,
+        v: 1.0,
+        t: "2018-01-01",
+        other: "other"
+      })
+
+    assert %InputData{
+             high: 1.0,
+             low: 1.0,
+             open: 1.0,
+             close: 1.0,
+             volume: 1.0,
+             timestamp: "2018-01-01",
+             other: "other"
+           } == result
+  end
 end
