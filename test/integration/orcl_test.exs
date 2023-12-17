@@ -25,7 +25,7 @@ defmodule Integration.OrclTest do
         result.is_position_open ->
           :close_buy
 
-        previous_one.close < previous_two.close and previous_two.close < current_close ->
+        current_close < previous_one.close and previous_one.close < previous_two.close ->
           :buy
 
         true ->
