@@ -6,7 +6,9 @@ defmodule ExPostFacto.TradeStats.TotalProfitAndLoss do
   alias ExPostFacto.Result.ResultCalculationError
 
   @doc """
-  Calculates the total profit and loss for a result based on data points
+  Calculates the total profit and loss for a result based on data points. When
+  the number of trades is odd, i.e. there is not a close to match an open, then
+  the last trade is ignored.
   """
   @spec calculate!(
           data_points :: list(),
@@ -16,6 +18,13 @@ defmodule ExPostFacto.TradeStats.TotalProfitAndLoss do
 
   def calculate!([_single_data_point], total_profit_and_loss),
     do: total_profit_and_loss
+
+  # The number of trades is odd, i.e. there is not a close to match an open. So
+  # lop off the first one in the list, i.e. most recent.
+  def calculate!([_head | rest] = data_points, total_profit_and_loss)
+      when rem(length(data_points), 2) == 1 do
+    calculate!(rest, total_profit_and_loss)
+  end
 
   def calculate!([head, previous | rest], total_profit_and_loss) do
     %{datum: %{close: head_close}, action: head_action} = head
