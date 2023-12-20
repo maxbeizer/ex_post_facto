@@ -137,6 +137,7 @@ defmodule ExPostFacto.Result do
   @spec calculate_trade_stats!(result :: %__MODULE__{}) :: keyword() | no_return()
   defp calculate_trade_stats!(result) do
     [
+      {:trade_pairs, result.trade_pairs},
       {:total_profit_and_loss, TotalProfitAndLoss.calculate!(result.data_points, 0.0)},
       {:win_rate, WinRate.calculate!(result)},
       # TODO to work this needs the calculated profit and loss
