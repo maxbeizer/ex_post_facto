@@ -93,6 +93,7 @@ defmodule ExPostFacto do
       data
       |> Enum.map(&InputData.munge/1)
       |> Enum.with_index(fn datum, index -> {index, datum} end)
+      |> Enum.chunk_every(2, 1, :discard)
       |> Enum.reduce(result, &apply_strategy(&1, &2, strategy))
       |> Result.compile(options)
 
@@ -100,16 +101,16 @@ defmodule ExPostFacto do
   end
 
   @spec apply_strategy(
-          {index :: non_neg_integer(), datum :: DataPoint.t()},
+          [{index :: non_neg_integer(), datum :: DataPoint.t()}],
           result :: Result.t(),
           strategy :: module_function_arguments()
         ) :: Result.t()
-  defp apply_strategy({index, datum}, result, {m, f, _a}) do
+  defp apply_strategy([{_index, datum}, {next_index, next_datum}], result, {m, f, _a}) do
     action = apply(m, f, [datum, result])
 
     cond do
       action in @actions ->
-        Result.add_data_point(result, index, datum, action)
+        Result.add_data_point(result, next_index, next_datum, action)
 
       true ->
         result

@@ -27,27 +27,27 @@ defmodule ExPostFacto.TradeStats.TotalProfitAndLoss do
   end
 
   def calculate!([head, previous | rest], total_profit_and_loss) do
-    %{datum: %{close: head_close}, action: head_action} = head
-    %{datum: %{close: previous_close}, action: previous_action} = previous
+    %{datum: %{open: head_open}, action: head_action} = head
+    %{datum: %{open: previous_open}, action: previous_action} = previous
 
     computed_profit_and_loss =
       cond do
-        head_action == :close_buy and previous_action == :buy and head_close > previous_close ->
-          total_profit_and_loss + head_close - previous_close
+        head_action == :close_buy and previous_action == :buy and head_open > previous_open ->
+          total_profit_and_loss + head_open - previous_open
 
-        head_action == :close_buy and previous_action == :buy and head_close < previous_close ->
-          total_profit_and_loss + head_close - previous_close
+        head_action == :close_buy and previous_action == :buy and head_open < previous_open ->
+          total_profit_and_loss + head_open - previous_open
 
-        head_action == :close_buy and previous_action == :buy and head_close == previous_close ->
+        head_action == :close_buy and previous_action == :buy and head_open == previous_open ->
           total_profit_and_loss
 
-        head_action == :close_sell and previous_action == :sell and head_close > previous_close ->
-          total_profit_and_loss + previous_close - head_close
+        head_action == :close_sell and previous_action == :sell and head_open > previous_open ->
+          total_profit_and_loss + previous_open - head_open
 
-        head_action == :close_sell and previous_action == :sell and head_close < previous_close ->
-          total_profit_and_loss + previous_close - head_close
+        head_action == :close_sell and previous_action == :sell and head_open < previous_open ->
+          total_profit_and_loss + previous_open - head_open
 
-        head_action == :close_sell and previous_action == :sell and head_close == previous_close ->
+        head_action == :close_sell and previous_action == :sell and head_open == previous_open ->
           total_profit_and_loss
 
         true ->

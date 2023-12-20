@@ -24,7 +24,7 @@ defmodule ExPostFacto.TradeStats.WinRate do
         ) ::
           non_neg_integer()
   defp calculate_win_count(
-         {%{datum: %{close: exit_price}}, %{datum: %{close: enter_price}, action: :buy}},
+         {%{datum: %{open: exit_price}}, %{datum: %{open: enter_price}, action: :buy}},
          win_count
        ) do
     cond do
@@ -40,7 +40,7 @@ defmodule ExPostFacto.TradeStats.WinRate do
   end
 
   defp calculate_win_count(
-         {%{datum: %{close: exit_price}}, %{datum: %{close: enter_price}, action: :sell}},
+         {%{datum: %{open: exit_price}}, %{datum: %{open: enter_price}, action: :sell}},
          win_count
        ) do
     cond do
