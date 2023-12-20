@@ -15,7 +15,7 @@ defmodule ExPostFacto.TradeStats.BestTradeByPercentage do
   @spec calculate!(result :: Result.t()) :: float()
   def calculate!(%Result{trade_pairs: trade_pairs, total_profit_and_loss: total_profit_and_loss}) do
     trade_pairs
-    |> Enum.reduce(%{balance: total_profit_and_loss, max: 0}, fn pair, acc ->
+    |> Enum.reduce(%{balance: total_profit_and_loss, max: 0.0}, fn pair, acc ->
       {percentage, balance} = trade_percentage(pair, total_profit_and_loss)
       new_max = max(acc[:max], percentage)
       %{acc | balance: balance, max: new_max}

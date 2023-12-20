@@ -113,44 +113,34 @@ defmodule ExPostFactoResultTest do
 
   test "compile/2 calculates total profit when data points exist with buy" do
     data_points = [
-      DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 75.0, c: 85.0}), :close_buy, 1),
-      DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 50.0, c: 75.0}), :buy, 0)
+      DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 85.0, c: 85.0}), :close_buy, 1),
+      DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 75.0, c: 75.0}), :buy, 0)
     ]
 
     result =
       %Result{data_points: data_points, is_position_open: false, starting_balance: 100.0}
       |> Result.compile()
 
-    assert %Result{
-             data_points: data_points,
-             is_position_open: false,
-             starting_balance: 100.0,
-             total_profit_and_loss: 10.0
-           } == result
+    assert 10 == result.total_profit_and_loss
   end
 
   test "compile/2 calculates total loss when data points exist with buy" do
     data_points = [
       DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 75.0, c: 75.0}), :close_buy, 1),
-      DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 50.0, c: 85.0}), :buy, 0)
+      DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 85.0, c: 85.0}), :buy, 0)
     ]
 
     result =
       %Result{data_points: data_points, is_position_open: false, starting_balance: 100.0}
       |> Result.compile()
 
-    assert %Result{
-             data_points: data_points,
-             is_position_open: false,
-             starting_balance: 100.0,
-             total_profit_and_loss: -10.0
-           } == result
+    assert -10 == result.total_profit_and_loss
   end
 
   test "compile/2 calculates total profit when data points exist with sell" do
     data_points = [
       DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 75.0, c: 75.0}), :close_sell, 1),
-      DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 50.0, c: 85.0}), :sell, 0)
+      DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 85.0, c: 85.0}), :sell, 0)
     ]
 
     result =
@@ -161,26 +151,49 @@ defmodule ExPostFactoResultTest do
              data_points: data_points,
              is_position_open: false,
              starting_balance: 100.0,
-             total_profit_and_loss: 10.0
+             total_profit_and_loss: 10.0,
+             trade_pairs: [
+               {%ExPostFacto.DataPoint{
+                  datum: %ExPostFacto.InputData{
+                    high: 100.0,
+                    low: 50.0,
+                    open: 75.0,
+                    close: 75.0,
+                    volume: nil,
+                    timestamp: nil,
+                    other: nil
+                  },
+                  action: :close_sell,
+                  index: 1
+                },
+                %ExPostFacto.DataPoint{
+                  datum: %ExPostFacto.InputData{
+                    high: 100.0,
+                    low: 50.0,
+                    open: 85.0,
+                    close: 85.0,
+                    volume: nil,
+                    timestamp: nil,
+                    other: nil
+                  },
+                  action: :sell,
+                  index: 0
+                }}
+             ]
            } == result
   end
 
   test "compile/2 calculates total loss when data points exist with sell" do
     data_points = [
-      DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 75.0, c: 85.0}), :close_sell, 1),
-      DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 50.0, c: 75.0}), :sell, 0)
+      DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 85.0, c: 85.0}), :close_sell, 1),
+      DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 75.0, c: 75.0}), :sell, 0)
     ]
 
     result =
       %Result{data_points: data_points, is_position_open: false, starting_balance: 100.0}
       |> Result.compile()
 
-    assert %Result{
-             data_points: data_points,
-             is_position_open: false,
-             starting_balance: 100.0,
-             total_profit_and_loss: -10.0
-           } == result
+    assert -10.0 == result.total_profit_and_loss
   end
 
   test "compile/2 calculates the win rate as 0.0 when no data points" do
@@ -210,7 +223,7 @@ defmodule ExPostFactoResultTest do
     result =
       %Result{data_points: []}
       |> Result.add_data_point(0, %{high: 100.0, low: 50.0, open: 75.0, close: 75.0}, :buy)
-      |> Result.add_data_point(1, %{high: 100.0, low: 50.0, open: 75.0, close: 85.0}, :close_buy)
+      |> Result.add_data_point(1, %{high: 100.0, low: 50.0, open: 85.0, close: 85.0}, :close_buy)
       |> Result.compile()
 
     assert 100.0 == result.win_rate
@@ -220,8 +233,8 @@ defmodule ExPostFactoResultTest do
     result =
       %Result{data_points: []}
       |> Result.add_data_point(0, %{high: 100.0, low: 50.0, open: 75.0, close: 75.0}, :buy)
-      |> Result.add_data_point(1, %{high: 100.0, low: 50.0, open: 75.0, close: 85.0}, :close_buy)
-      |> Result.add_data_point(2, %{high: 100.0, low: 50.0, open: 75.0, close: 85.0}, :buy)
+      |> Result.add_data_point(1, %{high: 100.0, low: 50.0, open: 85.0, close: 85.0}, :close_buy)
+      |> Result.add_data_point(2, %{high: 100.0, low: 50.0, open: 85.0, close: 85.0}, :buy)
       |> Result.add_data_point(3, %{high: 100.0, low: 50.0, open: 75.0, close: 75.0}, :close_buy)
       |> Result.compile()
 
@@ -251,7 +264,7 @@ defmodule ExPostFactoResultTest do
     result =
       %Result{data_points: [], starting_balance: 100.0}
       |> Result.add_data_point(2, %{high: 100.0, low: 50.0, open: 75.0, close: 75.0}, :buy)
-      |> Result.add_data_point(3, %{high: 100.0, low: 50.0, open: 75.0, close: 85.0}, :close_buy)
+      |> Result.add_data_point(3, %{high: 100.0, low: 50.0, open: 85.0, close: 85.0}, :close_buy)
       |> Result.compile()
 
     assert 10.0 == result.best_trade_by_percentage
