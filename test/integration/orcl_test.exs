@@ -4,32 +4,23 @@ defmodule Integration.OrclTest do
 
   @tag :integration
   test "it works end to end" do
-    {:ok, result} =
+    {:ok, output} =
       "test/fixtures/orcl-1995-2014.txt"
       |> File.read!()
       |> convert_to_expf_data()
-      |> ExPostFacto.backtest({Strategy, :call, []})
+      |> ExPostFacto.backtest({Strategy, :call, []}, starting_balance: 100_000.0)
 
-    assert result
+    assert output
   end
 
   defmodule Strategy do
-    def call(
-          %{
-            close: current_close,
-            other: %{previous_one: previous_one, previous_two: previous_two}
-          },
-          result
-        ) do
+    def call(_, result) do
       cond do
         result.is_position_open ->
           :close_buy
 
-        current_close < previous_one.close and previous_one.close < previous_two.close ->
-          :buy
-
         true ->
-          nil
+          :buy
       end
     end
   end
