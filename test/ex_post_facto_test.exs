@@ -157,14 +157,14 @@ defmodule ExPostFactoTest do
 
   test "backtest/3 handles multiple buy loss points" do
     example_data = [
-      %{high: 1.0, low: 0.0, open: 0.75, close: 1.75},
-      %{high: 1.0, low: 0.0, open: 0.75, close: 1.75},
-      %{high: 100.0, low: 0.0, open: 1.75, close: 0.75},
-      %{high: 100.0, low: 0.0, open: 1.75, close: 0.75},
-      %{high: 1.0, low: 0.0, open: 0.75, close: 1.75},
-      %{high: 1.0, low: 0.0, open: 0.75, close: 1.75},
-      %{high: 100.0, low: 0.0, open: 1.75, close: 0.75},
-      %{high: 100.0, low: 0.0, open: 1.75, close: 0.75}
+      %{high: 1.0, low: 0.0, open: 1.75, close: 0.75},
+      %{high: 1.0, low: 0.0, open: 1.75, close: 0.75},
+      %{high: 100.0, low: 0.0, open: 0.75, close: 0.75},
+      %{high: 100.0, low: 0.0, open: 0.75, close: 0.75},
+      %{high: 1.0, low: 0.0, open: 1.75, close: 0.75},
+      %{high: 1.0, low: 0.0, open: 1.75, close: 0.75},
+      %{high: 100.0, low: 0.0, open: 0.75, close: 0.75},
+      %{high: 100.0, low: 0.0, open: 0.75, close: 0.75}
     ]
 
     mfa = {BuyBuyBuy, :call, []}
@@ -229,14 +229,14 @@ defmodule ExPostFactoTest do
 
   test "backtest/3 handles multiple sell loss points" do
     example_data = [
-      %{high: 1.0, low: 0.0, open: 1.75, close: 0.75},
-      %{high: 1.0, low: 0.0, open: 1.75, close: 0.75},
-      %{high: 100.0, low: 0.0, open: 0.75, close: 1.75},
-      %{high: 100.0, low: 0.0, open: 0.75, close: 1.75},
-      %{high: 1.0, low: 0.0, open: 1.75, close: 0.75},
-      %{high: 1.0, low: 0.0, open: 1.75, close: 0.75},
-      %{high: 100.0, low: 0.0, open: 0.75, close: 1.75},
-      %{high: 100.0, low: 0.0, open: 0.75, close: 1.75}
+      %{high: 1.0, low: 0.0, open: 0.75, close: 0.75},
+      %{high: 1.0, low: 0.0, open: 0.75, close: 0.75},
+      %{high: 100.0, low: 0.0, open: 1.75, close: 1.75},
+      %{high: 100.0, low: 0.0, open: 1.75, close: 1.75},
+      %{high: 1.0, low: 0.0, open: 0.75, close: 0.75},
+      %{high: 1.0, low: 0.0, open: 0.75, close: 0.75},
+      %{high: 100.0, low: 0.0, open: 1.75, close: 1.75},
+      %{high: 100.0, low: 0.0, open: 1.75, close: 1.75}
     ]
 
     mfa = {SellSellSell, :call, []}
