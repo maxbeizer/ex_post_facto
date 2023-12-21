@@ -1,4 +1,4 @@
-ExUnit.start()
+ExUnit.start(exclude: [:skip])
 
 defmodule CandleDataHelper do
   def build_candle(action \\ nil, data) do

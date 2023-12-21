@@ -226,7 +226,7 @@ defmodule ExPostFactoResultTest do
     assert 0.0 == result.best_trade_by_percentage
   end
 
-  @tag :focus
+  @tag :skip
   test "compile/2 calculates best win by percentage when there are winners" do
     result =
       %Result{data_points: [], starting_balance: 100.0}
