@@ -3,7 +3,6 @@ defmodule Integration.OrclTest do
   alias Integration.OrclTest.Strategy
 
   @tag :integration
-  @tag :skip
   test "it works end to end" do
     {:ok, output} =
       "test/fixtures/orcl-1995-2014.txt"

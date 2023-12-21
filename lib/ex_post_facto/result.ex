@@ -115,6 +115,7 @@ defmodule ExPostFacto.Result do
   def compile(result, _options) do
     trade_stats =
       result
+      |> close_maybe_dangling_open_trade()
       |> CompilePairs.call!()
       |> calculate_trade_stats!()
 
@@ -189,4 +190,33 @@ defmodule ExPostFacto.Result do
       {initial_acc, collector_fun}
     end
   end
+
+  @spec close_maybe_dangling_open_trade(result :: %__MODULE__{}) :: %__MODULE__{}
+  defp close_maybe_dangling_open_trade(
+         %{data_points: [%{datum: datum, action: :buy, index: index} = dangler | rest]} = result
+       ) do
+    %{
+      result
+      | data_points: [
+          %DataPoint{datum: datum, action: :close_buy, index: index + 1},
+          dangler | rest
+        ],
+        trades_count: result.trades_count + 1
+    }
+  end
+
+  defp close_maybe_dangling_open_trade(
+         %{data_points: [%{datum: datum, action: :sell, index: index} = dangler | rest]} = result
+       ) do
+    %{
+      result
+      | data_points: [
+          %DataPoint{datum: datum, action: :close_sell, index: index + 1},
+          dangler | rest
+        ],
+        trades_count: result.trades_count + 1
+    }
+  end
+
+  defp close_maybe_dangling_open_trade(result), do: result
 end
