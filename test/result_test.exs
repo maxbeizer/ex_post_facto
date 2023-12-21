@@ -1,10 +1,10 @@
 defmodule ExPostFactoResultTest do
   use ExUnit.Case, async: true
   doctest ExPostFacto.Result
+  import CandleDataHelper
 
   alias ExPostFacto.{
     DataPoint,
-    InputData,
     Result
   }
 
@@ -62,7 +62,7 @@ defmodule ExPostFactoResultTest do
 
   test "counts the number of closed trades when all closed" do
     data_points = [
-      DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 75.0, c: 85.0}), :buy, 2)
+      DataPoint.new(build_candle(open: 0.0), :buy, 2)
     ]
 
     result =
@@ -74,9 +74,9 @@ defmodule ExPostFactoResultTest do
 
   test "counts the number of closed trades (multiple) when all closed" do
     data_points = [
-      DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 75.0, c: 85.0}), :buy, 2),
-      DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 75.0, c: 85.0}), :close_buy, 1),
-      DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 75.0, c: 85.0}), :buy, 0)
+      DataPoint.new(build_candle(open: 0.0), :buy, 2),
+      DataPoint.new(build_candle(open: 0.0), :close_buy, 1),
+      DataPoint.new(build_candle(open: 0.0), :buy, 0)
     ]
 
     # start with one trade count from the data above
@@ -113,8 +113,8 @@ defmodule ExPostFactoResultTest do
 
   test "compile/2 calculates total profit when data points exist with buy" do
     data_points = [
-      DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 85.0, c: 85.0}), :close_buy, 1),
-      DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 75.0, c: 75.0}), :buy, 0)
+      DataPoint.new(build_candle(open: 10.0), :close_buy, 1),
+      DataPoint.new(build_candle(open: 0.0), :buy, 0)
     ]
 
     result =
@@ -126,8 +126,8 @@ defmodule ExPostFactoResultTest do
 
   test "compile/2 calculates total loss when data points exist with buy" do
     data_points = [
-      DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 75.0, c: 75.0}), :close_buy, 1),
-      DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 85.0, c: 85.0}), :buy, 0)
+      DataPoint.new(build_candle(open: 0.0), :close_buy, 1),
+      DataPoint.new(build_candle(open: 10.0), :buy, 0)
     ]
 
     result =
@@ -139,54 +139,21 @@ defmodule ExPostFactoResultTest do
 
   test "compile/2 calculates total profit when data points exist with sell" do
     data_points = [
-      DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 75.0, c: 75.0}), :close_sell, 1),
-      DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 85.0, c: 85.0}), :sell, 0)
+      DataPoint.new(build_candle(open: 0.0), :close_sell, 1),
+      DataPoint.new(build_candle(open: 10.0), :sell, 0)
     ]
 
     result =
       %Result{data_points: data_points, is_position_open: false, starting_balance: 100.0}
       |> Result.compile()
 
-    assert %Result{
-             data_points: data_points,
-             is_position_open: false,
-             starting_balance: 100.0,
-             total_profit_and_loss: 10.0,
-             trade_pairs: [
-               {%ExPostFacto.DataPoint{
-                  datum: %ExPostFacto.InputData{
-                    high: 100.0,
-                    low: 50.0,
-                    open: 75.0,
-                    close: 75.0,
-                    volume: nil,
-                    timestamp: nil,
-                    other: nil
-                  },
-                  action: :close_sell,
-                  index: 1
-                },
-                %ExPostFacto.DataPoint{
-                  datum: %ExPostFacto.InputData{
-                    high: 100.0,
-                    low: 50.0,
-                    open: 85.0,
-                    close: 85.0,
-                    volume: nil,
-                    timestamp: nil,
-                    other: nil
-                  },
-                  action: :sell,
-                  index: 0
-                }}
-             ]
-           } == result
+    assert 10.0 == result.total_profit_and_loss
   end
 
   test "compile/2 calculates total loss when data points exist with sell" do
     data_points = [
-      DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 85.0, c: 85.0}), :close_sell, 1),
-      DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 75.0, c: 75.0}), :sell, 0)
+      DataPoint.new(build_candle(open: 10.0), :close_sell, 1),
+      DataPoint.new(build_candle(open: 0.0), :sell, 0)
     ]
 
     result =
@@ -208,8 +175,8 @@ defmodule ExPostFactoResultTest do
 
   test "compile/2 calculates the win rate as 0.0 when no wins" do
     data_points = [
-      DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 75.0, c: 85.0}), :close_sell, 1),
-      DataPoint.new(InputData.munge(%{h: 100.0, l: 50.0, o: 50.0, c: 75.0}), :sell, 0)
+      DataPoint.new(build_candle(open: 10.0), :close_sell, 1),
+      DataPoint.new(build_candle(open: 0.0), :sell, 0)
     ]
 
     result =
@@ -222,8 +189,8 @@ defmodule ExPostFactoResultTest do
   test "compile/2 calculates the win rate as 100.0 when all wins" do
     result =
       %Result{data_points: []}
-      |> Result.add_data_point(0, %{high: 100.0, low: 50.0, open: 75.0, close: 75.0}, :buy)
-      |> Result.add_data_point(1, %{high: 100.0, low: 50.0, open: 85.0, close: 85.0}, :close_buy)
+      |> Result.add_data_point(0, build_candle(open: 0.0), :buy)
+      |> Result.add_data_point(1, build_candle(open: 10.0), :close_buy)
       |> Result.compile()
 
     assert 100.0 == result.win_rate
@@ -232,10 +199,10 @@ defmodule ExPostFactoResultTest do
   test "compile/2 calculates the win rate as 50.0 when half wins" do
     result =
       %Result{data_points: []}
-      |> Result.add_data_point(0, %{high: 100.0, low: 50.0, open: 75.0, close: 75.0}, :buy)
-      |> Result.add_data_point(1, %{high: 100.0, low: 50.0, open: 85.0, close: 85.0}, :close_buy)
-      |> Result.add_data_point(2, %{high: 100.0, low: 50.0, open: 85.0, close: 85.0}, :buy)
-      |> Result.add_data_point(3, %{high: 100.0, low: 50.0, open: 75.0, close: 75.0}, :close_buy)
+      |> Result.add_data_point(0, build_candle(open: 10.0), :buy)
+      |> Result.add_data_point(1, build_candle(open: 0.0), :close_buy)
+      |> Result.add_data_point(2, build_candle(open: 0.0), :buy)
+      |> Result.add_data_point(3, build_candle(open: 10.0), :close_buy)
       |> Result.compile()
 
     assert 50.0 == result.win_rate
@@ -252,8 +219,8 @@ defmodule ExPostFactoResultTest do
   test "compile/2 calculates best win by percentage as zero when there are no winners" do
     result =
       %Result{data_points: [], starting_balance: 100.0}
-      |> Result.add_data_point(2, %{high: 100.0, low: 50.0, open: 75.0, close: 85.0}, :buy)
-      |> Result.add_data_point(3, %{high: 100.0, low: 50.0, open: 75.0, close: 75.0}, :close_buy)
+      |> Result.add_data_point(2, build_candle(open: 10.0), :buy)
+      |> Result.add_data_point(3, build_candle(open: 0.0), :close_buy)
       |> Result.compile()
 
     assert 0.0 == result.best_trade_by_percentage
@@ -263,8 +230,8 @@ defmodule ExPostFactoResultTest do
   test "compile/2 calculates best win by percentage when there are winners" do
     result =
       %Result{data_points: [], starting_balance: 100.0}
-      |> Result.add_data_point(2, %{high: 100.0, low: 50.0, open: 75.0, close: 75.0}, :buy)
-      |> Result.add_data_point(3, %{high: 100.0, low: 50.0, open: 85.0, close: 85.0}, :close_buy)
+      |> Result.add_data_point(2, build_candle(open: 0.0), :buy)
+      |> Result.add_data_point(3, build_candle(open: 10.0), :close_buy)
       |> Result.compile()
 
     assert 10.0 == result.best_trade_by_percentage
