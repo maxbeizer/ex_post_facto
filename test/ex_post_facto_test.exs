@@ -48,7 +48,7 @@ defmodule ExPostFactoTest do
   end
 
   test "backtest/3 returns an output struct with the data" do
-    example_data = [%{high: 1.0, low: 0.0, open: 0.25, close: 0.75}]
+    example_data = [build_data(open: 0.75)]
 
     {:ok, output} = ExPostFacto.backtest(example_data, {Noop, :noop, []})
 
@@ -75,8 +75,8 @@ defmodule ExPostFactoTest do
 
   test "backtest/3 collects data points from the applied strategy" do
     example_data = [
-      %{high: 1.0, low: 0.0, open: 0.25, close: 0.75},
-      %{high: 1.0, low: 0.0, open: 0.25, close: 0.75}
+      build_data(open: 0.75),
+      build_data(open: 0.75)
     ]
 
     mfa = {BuyBuyBuy, :call, []}
@@ -92,7 +92,7 @@ defmodule ExPostFactoTest do
 
   test "backtest/3 handles P&L when there are open positions" do
     example_data = [
-      %{high: 1.0, low: 0.0, open: 0.25, close: 0.75}
+      build_data(open: 0.75)
     ]
 
     mfa = {BuyBuyBuy, :call, []}
@@ -105,10 +105,10 @@ defmodule ExPostFactoTest do
 
   test "backtest/3 collects P&L from the applied strategy when positive" do
     example_data = [
-      %{high: 1.0, low: 0.0, open: 0.25, close: 0.75},
-      %{high: 1.0, low: 0.0, open: 0.25, close: 0.75},
-      %{high: 100.0, low: 1.0, open: 1.25, close: 1.75},
-      %{high: 100.0, low: 1.0, open: 1.25, close: 1.75}
+      build_data(open: 0.75),
+      build_data(open: 0.75),
+      build_data(:close_buy, open: 1.75),
+      build_data(:close_buy, open: 1.75)
     ]
 
     mfa = {BuyBuyBuy, :call, []}
@@ -121,10 +121,10 @@ defmodule ExPostFactoTest do
 
   test "backtest/3 collects P&L from the applied strategy when negative" do
     example_data = [
-      %{high: 1.0, low: 0.0, open: 1.75, close: 1.75},
-      %{high: 1.0, low: 0.0, open: 1.75, close: 1.75},
-      %{high: 100.0, low: 0.0, open: 0.75, close: 0.75},
-      %{high: 100.0, low: 0.0, open: 0.75, close: 0.75}
+      build_data(open: 1.75),
+      build_data(open: 1.75),
+      build_data(:close_buy, open: 0.75),
+      build_data(:close_buy, open: 0.75)
     ]
 
     mfa = {BuyBuyBuy, :call, []}
@@ -137,14 +137,14 @@ defmodule ExPostFactoTest do
 
   test "backtest/3 handles multiple buy profit points" do
     example_data = [
-      %{high: 1.0, low: 0.0, open: 0.75, close: 0.75},
-      %{high: 1.0, low: 0.0, open: 0.75, close: 0.75},
-      %{high: 100.0, low: 1.0, open: 1.75, close: 1.75},
-      %{high: 100.0, low: 1.0, open: 1.75, close: 1.75},
-      %{high: 1.0, low: 0.0, open: 0.75, close: 0.75},
-      %{high: 1.0, low: 0.0, open: 0.75, close: 0.75},
-      %{high: 100.0, low: 1.0, open: 1.75, close: 1.75},
-      %{high: 100.0, low: 1.0, open: 1.75, close: 1.75}
+      build_data(open: 0.75),
+      build_data(open: 0.75),
+      build_data(:close_buy, open: 1.75),
+      build_data(:close_buy, open: 1.75),
+      build_data(open: 0.75),
+      build_data(open: 0.75),
+      build_data(:close_buy, open: 1.75),
+      build_data(:close_buy, open: 1.75)
     ]
 
     mfa = {BuyBuyBuy, :call, []}
@@ -157,14 +157,14 @@ defmodule ExPostFactoTest do
 
   test "backtest/3 handles multiple buy loss points" do
     example_data = [
-      %{high: 1.0, low: 0.0, open: 1.75, close: 0.75},
-      %{high: 1.0, low: 0.0, open: 1.75, close: 0.75},
-      %{high: 100.0, low: 0.0, open: 0.75, close: 0.75},
-      %{high: 100.0, low: 0.0, open: 0.75, close: 0.75},
-      %{high: 1.0, low: 0.0, open: 1.75, close: 0.75},
-      %{high: 1.0, low: 0.0, open: 1.75, close: 0.75},
-      %{high: 100.0, low: 0.0, open: 0.75, close: 0.75},
-      %{high: 100.0, low: 0.0, open: 0.75, close: 0.75}
+      build_data(open: 1.75),
+      build_data(open: 1.75),
+      build_data(:close_buy, open: 0.75),
+      build_data(:close_buy, open: 0.75),
+      build_data(open: 1.75),
+      build_data(open: 1.75),
+      build_data(:close_buy, open: 0.75),
+      build_data(:close_buy, open: 0.75)
     ]
 
     mfa = {BuyBuyBuy, :call, []}
@@ -177,10 +177,10 @@ defmodule ExPostFactoTest do
 
   test "backtest/3 handles sells for profit" do
     example_data = [
-      %{high: 1.0, low: 0.0, open: 1.75, close: 1.75},
-      %{high: 1.0, low: 0.0, open: 1.75, close: 1.75},
-      %{high: 100.0, low: 0.0, open: 0.75, close: 0.75},
-      %{high: 100.0, low: 0.0, open: 0.75, close: 0.75}
+      build_data(open: 1.75),
+      build_data(open: 1.75),
+      build_data(:close_sell, open: 0.75),
+      build_data(:close_sell, open: 0.75)
     ]
 
     mfa = {SellSellSell, :call, []}
@@ -193,10 +193,10 @@ defmodule ExPostFactoTest do
 
   test "backtest/3 handles sells for loss" do
     example_data = [
-      %{high: 1.0, low: 0.0, open: 0.25, close: 0.75},
-      %{high: 1.0, low: 0.0, open: 0.25, close: 0.75},
-      %{high: 100.0, low: 0.0, open: 1.25, close: 1.75},
-      %{high: 100.0, low: 0.0, open: 1.25, close: 1.75}
+      build_data(open: 0.25),
+      build_data(open: 0.25),
+      build_data(:close_sell, open: 1.25),
+      build_data(:close_sell, open: 1.25)
     ]
 
     mfa = {SellSellSell, :call, []}
@@ -209,14 +209,14 @@ defmodule ExPostFactoTest do
 
   test "backtest/3 handles multiple sell profit points" do
     example_data = [
-      %{high: 1.0, low: 0.0, open: 1.75, close: 1.75},
-      %{high: 1.0, low: 0.0, open: 1.75, close: 1.75},
-      %{high: 100.0, low: 0.0, open: 0.75, close: 0.75},
-      %{high: 100.0, low: 0.0, open: 0.75, close: 0.75},
-      %{high: 1.0, low: 0.0, open: 1.75, close: 1.75},
-      %{high: 1.0, low: 0.0, open: 1.75, close: 1.75},
-      %{high: 100.0, low: 0.0, open: 0.75, close: 0.75},
-      %{high: 100.0, low: 0.0, open: 0.75, close: 0.75}
+      build_data(open: 1.75),
+      build_data(open: 1.75),
+      build_data(:close_sell, open: 0.75),
+      build_data(:close_sell, open: 0.75),
+      build_data(open: 1.75),
+      build_data(open: 1.75),
+      build_data(:close_sell, open: 0.75),
+      build_data(:close_sell, open: 0.75)
     ]
 
     mfa = {SellSellSell, :call, []}
@@ -229,14 +229,14 @@ defmodule ExPostFactoTest do
 
   test "backtest/3 handles multiple sell loss points" do
     example_data = [
-      %{high: 1.0, low: 0.0, open: 0.75, close: 0.75},
-      %{high: 1.0, low: 0.0, open: 0.75, close: 0.75},
-      %{high: 100.0, low: 0.0, open: 1.75, close: 1.75},
-      %{high: 100.0, low: 0.0, open: 1.75, close: 1.75},
-      %{high: 1.0, low: 0.0, open: 0.75, close: 0.75},
-      %{high: 1.0, low: 0.0, open: 0.75, close: 0.75},
-      %{high: 100.0, low: 0.0, open: 1.75, close: 1.75},
-      %{high: 100.0, low: 0.0, open: 1.75, close: 1.75}
+      build_data(open: 0.75),
+      build_data(open: 0.75),
+      build_data(:close_sell, open: 1.75),
+      build_data(:close_sell, open: 1.75),
+      build_data(open: 0.75),
+      build_data(open: 0.75),
+      build_data(:close_sell, open: 1.75),
+      build_data(:close_sell, open: 1.75)
     ]
 
     mfa = {SellSellSell, :call, []}
@@ -245,5 +245,13 @@ defmodule ExPostFactoTest do
 
     # 2 * (1.75 - 0.75) = -2.0
     assert -2.0 == result.total_profit_and_loss
+  end
+
+  defp build_data(action \\ nil, data) do
+    high = if action, do: 100.0, else: Keyword.get(data, :high, 0.0)
+    low = Keyword.get(data, :low, 0.0)
+    open = Keyword.get(data, :open, 0.0)
+    close = Keyword.get(data, :close, 0.0)
+    %{high: high, low: low, open: open, close: close}
   end
 end
