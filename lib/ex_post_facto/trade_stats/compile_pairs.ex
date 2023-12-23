@@ -7,6 +7,8 @@ defmodule ExPostFacto.TradeStats.CompilePairs do
     Result
   }
 
+  alias ExPostFacto.TradeStats.TotalProfitAndLoss
+
   @doc """
   Given a list of data points, group the enter and exit points into pairs. So,
   match the :close_buy with the closest :buy and :close_sell with the closest
@@ -14,11 +16,69 @@ defmodule ExPostFacto.TradeStats.CompilePairs do
   """
   @spec call!(result :: %Result{}) :: %Result{} | no_return()
   def call!(%{data_points: []} = result), do: result
-  def call!(%{data_points: [_single_data_points]} = result), do: result
+  def call!(%{data_points: [_single_data_point]} = result), do: result
 
   def call!(%{data_points: [head | rest]} = result) do
     trade_pairs = do_call(rest, head, [])
-    %{result | trade_pairs: trade_pairs}
+
+    trade_pairs_with_running_balance =
+      calcaulate_running_balance(trade_pairs, result.starting_balance)
+
+    %{result | trade_pairs: trade_pairs_with_running_balance}
+  end
+
+  defp calcaulate_running_balance(pairs, balance) do
+    # require IEx
+    # IEx.pry()
+
+    pairs
+    # |> Enum.reverse()
+    |> seed_balance(balance)
+    |> do_it([])
+  end
+
+  defp do_it([{exit_point, enter_point, balance}], output) do
+    [
+      {exit_point, enter_point, TotalProfitAndLoss.calculate!([exit_point, enter_point], balance)}
+      | output
+    ]
+  end
+
+  defp do_it([{exit_point, enter_point}], output) do
+    {_, _, balance} = hd(output)
+
+    [
+      {exit_point, enter_point, TotalProfitAndLoss.calculate!([exit_point, enter_point], balance)}
+      | output
+    ]
+  end
+
+  defp do_it([{exit_point, enter_point, balance} | rest], []) do
+    do_it(
+      rest,
+      [
+        {exit_point, enter_point,
+         TotalProfitAndLoss.calculate!([exit_point, enter_point], balance)}
+      ]
+    )
+  end
+
+  defp do_it([current | rest], output) do
+    {_exit_point, _enter_point, balance} = hd(output)
+    {exit_point, enter_point} = current
+
+    do_it(
+      rest,
+      [
+        {exit_point, enter_point,
+         TotalProfitAndLoss.calculate!([exit_point, enter_point], balance)}
+        | output
+      ]
+    )
+  end
+
+  defp seed_balance([{exit_point, enter_point} | rest], balance) do
+    [{exit_point, enter_point, balance} | rest]
   end
 
   @spec do_call(
@@ -46,7 +106,7 @@ defmodule ExPostFacto.TradeStats.CompilePairs do
           pairs :: [{%DataPoint{}, %DataPoint{}}]
         ) :: [{%DataPoint{}, %DataPoint{}}]
   defp colllect_pairs([] = _rest, pairs), do: pairs
-  defp colllect_pairs([_sing_item] = _rest, pairs), do: pairs
+  defp colllect_pairs([_single_item] = _rest, pairs), do: pairs
 
   defp colllect_pairs([next_head | next_rest], pairs) do
     do_call(next_rest, next_head, pairs)
