@@ -122,8 +122,8 @@ defmodule ExPostFacto do
           options :: keyword()
         ) :: Result.t()
   defp build_initial_result(data, options) do
-    start_date = hd(data) |> Map.get(:timestamp)
-    end_date = List.last(data) |> Map.get(:timestamp)
+    start_date = hd(data) |> InputData.munge() |> Map.get(:timestamp)
+    end_date = List.last(data) |> InputData.munge() |> Map.get(:timestamp)
 
     options
     |> Keyword.put(:start_date, start_date)
