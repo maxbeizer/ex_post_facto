@@ -25,24 +25,24 @@ defmodule ExPostFacto.TradeStats.BestTradeByPercentage do
 
   @spec trade_percentage(
           pair :: {
-            enter :: %DataPoint{},
-            exit :: %DataPoint{}
+            enter_point :: %DataPoint{},
+            exit_point :: %DataPoint{}
           },
           balance :: float()
         ) :: {float(), float()}
   defp trade_percentage(_, 0.0), do: {0.0, 0.0}
 
   defp trade_percentage(
-         {%{datum: %{close: exit_close}}, %{datum: %{close: enter_close}, action: enter_action}},
+         {%{datum: %{open: exit_open}}, %{datum: %{open: enter_open}, action: enter_action}},
          balance
        ) do
     case enter_action do
       :buy ->
-        p_or_l = exit_close - enter_close
+        p_or_l = exit_open - enter_open
         {100 * p_or_l / balance, balance + -p_or_l}
 
       :sell ->
-        p_or_l = enter_close - exit_close
+        p_or_l = enter_open - exit_open
         {100 * p_or_l / balance, balance + -p_or_l}
 
       _ ->
