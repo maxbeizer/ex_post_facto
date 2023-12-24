@@ -10,6 +10,9 @@ defmodule ExPostFacto.TradeStats.TradePair do
   @enforce_keys [:exit_point, :enter_point, :balance, :previous_balance]
   defstruct [:exit_point, :enter_point, :balance, :previous_balance]
 
+  @doc """
+  Builds a new trade pair struct.
+  """
   @spec new(DataPoint.t(), DataPoint.t(), float()) :: %__MODULE__{}
   def new(exit_point, enter_point, previous_balance) do
     %__MODULE__{
@@ -20,6 +23,9 @@ defmodule ExPostFacto.TradeStats.TradePair do
     }
   end
 
+  @doc """
+  Returns the result of the trade pair as an atom, :win, :loss, or :break_even.
+  """
   @spec result(%__MODULE__{}) :: :win | :loss | :break_even
   def result(%{
         exit_point: %{datum: %{open: exit_price}},
@@ -53,6 +59,29 @@ defmodule ExPostFacto.TradeStats.TradePair do
     end
   end
 
+  @doc """
+  Returns the result of the trade pair as a float representing profit or loss.
+  """
+  @spec result_value(%__MODULE__{}) :: float()
+  def result_value(%{
+        exit_point: %{datum: %{open: exit_price}},
+        enter_point: %{datum: %{open: enter_price}, action: :buy}
+      }) do
+    exit_price - enter_price
+  end
+
+  @spec result_value(%__MODULE__{}) :: float()
+  def result_value(%{
+        exit_point: %{datum: %{open: exit_price}},
+        enter_point: %{datum: %{open: enter_price}, action: :sell}
+      }) do
+    enter_price - exit_price
+  end
+
+  @doc """
+  Returns the result of the trade pair as a float representing profit or loss as
+  a percentage of the balance before the trade.
+  """
   @spec result_percentage(%__MODULE__{}) :: float()
   def result_percentage(%{previous_balance: 0.0}), do: 0.0
 
