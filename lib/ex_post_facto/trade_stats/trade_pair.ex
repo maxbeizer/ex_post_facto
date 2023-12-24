@@ -105,10 +105,25 @@ defmodule ExPostFacto.TradeStats.TradePair do
     100 * (enter_price - exit_price) / previous_balance
   end
 
+  @doc """
+  Return the duration of the trade pair in days.
+  """
+  @spec duration(%__MODULE__{}) :: float()
   def duration(%{
         exit_point: %{datum: %{timestamp: exit_timestamp}},
         enter_point: %{datum: %{timestamp: enter_timestamp}}
-      }) do
-    Duration.call!(enter_timestamp, exit_timestamp)
+      })
+      when not is_nil(exit_timestamp) and not is_nil(enter_timestamp) do
+    # handle when timestamps are empty strings by returning 0.0
+    Duration.call!(enter_timestamp, exit_timestamp) || 0.0
   end
+
+  def duration(%{
+        exit_point: %{datum: %{timestamp: nil}},
+        enter_point: %{datum: %{timestamp: nil}}
+      }) do
+    0.0
+  end
+
+  def duration(_), do: 0.0
 end

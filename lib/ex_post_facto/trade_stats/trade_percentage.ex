@@ -4,6 +4,7 @@ defmodule ExPostFacto.TradeStats.TradePercentage do
   compiled pairs.
   """
 
+  alias ExPostFacto.Result
   alias ExPostFacto.TradeStats.TradePair
 
   @spec best!(result :: Result.t()) :: float()

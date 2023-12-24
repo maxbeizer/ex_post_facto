@@ -293,4 +293,74 @@ defmodule ExPostFactoResultTest do
 
     assert 10.0 == result.average_trade_by_percentage
   end
+
+  test "compile/2 calculates average trade duration" do
+    result =
+      %Result{data_points: [], starting_balance: 100.0}
+      |> Result.add_data_point(0, build_candle(open: 0.0, timestamp: "2023-12-23"), :buy)
+      |> Result.add_data_point(1, build_candle(open: 10.0, timestamp: "2023-12-24"), :close_buy)
+      |> Result.compile()
+
+    assert 1.0 == result.average_trade_duration
+  end
+
+  test "compile/2 calculates average intraday trade duration" do
+    result =
+      %Result{data_points: [], starting_balance: 100.0}
+      |> Result.add_data_point(
+        0,
+        build_candle(open: 0.0, timestamp: "2023-12-24T13:14:42.660407Z"),
+        :buy
+      )
+      |> Result.add_data_point(
+        1,
+        build_candle(open: 10.0, timestamp: "2023-12-24T14:14:42.660407Z"),
+        :close_buy
+      )
+      |> Result.compile()
+
+    # one hour average
+    assert 1 / 24 == result.average_trade_duration
+  end
+
+  test "compile/2 calculates max intraday trade duration" do
+    result =
+      %Result{data_points: [], starting_balance: 100.0}
+      |> Result.add_data_point(
+        0,
+        build_candle(open: 0.0, timestamp: "2023-12-24T13:14:42.660407Z"),
+        :buy
+      )
+      |> Result.add_data_point(
+        1,
+        build_candle(open: 10.0, timestamp: "2023-12-24T14:14:42.660407Z"),
+        :close_buy
+      )
+      |> Result.add_data_point(
+        0,
+        build_candle(open: 0.0, timestamp: "2023-12-24T14:14:42.660407Z"),
+        :buy
+      )
+      |> Result.add_data_point(
+        1,
+        build_candle(open: 10.0, timestamp: "2023-12-24T16:14:42.660407Z"),
+        :close_buy
+      )
+      |> Result.compile()
+
+    # two hour max
+    assert 2 / 24 == result.max_trade_duration
+  end
+
+  test "compile/2 calculates max trade duration" do
+    result =
+      %Result{data_points: [], starting_balance: 100.0}
+      |> Result.add_data_point(0, build_candle(open: 0.0, timestamp: "2023-12-21"), :buy)
+      |> Result.add_data_point(1, build_candle(open: 10.0, timestamp: "2023-12-22"), :close_buy)
+      |> Result.add_data_point(0, build_candle(open: 0.0, timestamp: "2023-12-22"), :buy)
+      |> Result.add_data_point(1, build_candle(open: 10.0, timestamp: "2023-12-24"), :close_buy)
+      |> Result.compile()
+
+    assert 2.0 == result.max_trade_duration
+  end
 end

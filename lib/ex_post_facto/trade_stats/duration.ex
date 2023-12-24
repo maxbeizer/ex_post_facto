@@ -3,6 +3,8 @@ defmodule ExPostFacto.TradeStats.Duration do
   A module for comparing dates.
   """
 
+  @seconds_in_a_day 86400
+
   @doc """
   Given a string representing a start and end date, return the number of days
   between the two points.
@@ -21,7 +23,7 @@ defmodule ExPostFacto.TradeStats.Duration do
         case {DateTime.from_iso8601(start_date), DateTime.from_iso8601(end_date)} do
           {{:ok, start_date_time, _}, {:ok, end_date_time, _}} ->
             if intraday?(start_date_time, end_date_time) do
-              DateTime.diff(end_date_time, start_date_time, :hour) / 24
+              DateTime.diff(end_date_time, start_date_time, :second) / @seconds_in_a_day
             else
               DateTime.diff(end_date_time, start_date_time, :day)
             end

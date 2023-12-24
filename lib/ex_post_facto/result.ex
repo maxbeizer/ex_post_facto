@@ -6,6 +6,7 @@ defmodule ExPostFacto.Result do
 
   alias ExPostFacto.TradeStats.{
     Duration,
+    TradeDuration,
     TradePercentage,
     CompilePairs,
     TotalProfitAndLoss,
@@ -57,7 +58,9 @@ defmodule ExPostFacto.Result do
             trade_pairs: [],
             best_trade_by_percentage: 0.0,
             worst_trade_by_percentage: 0.0,
-            average_trade_by_percentage: 0.0
+            average_trade_by_percentage: 0.0,
+            max_trade_duration: 0.0,
+            average_trade_duration: 0.0
 
   @doc """
   Creates a new result struct.
@@ -146,7 +149,9 @@ defmodule ExPostFacto.Result do
       {:win_rate, WinRate.calculate!(result)},
       {:best_trade_by_percentage, TradePercentage.best!(result)},
       {:worst_trade_by_percentage, TradePercentage.worst!(result)},
-      {:average_trade_by_percentage, TradePercentage.average!(result)}
+      {:average_trade_by_percentage, TradePercentage.average!(result)},
+      {:max_trade_duration, TradeDuration.max!(result)},
+      {:average_trade_duration, TradeDuration.average!(result)}
     ]
   end
 
