@@ -55,7 +55,8 @@ defmodule ExPostFacto.Result do
             win_rate: 0.0,
             trade_pairs: [],
             best_trade_by_percentage: 0.0,
-            worst_trade_by_percentage: 0.0
+            worst_trade_by_percentage: 0.0,
+            average_trade_by_percentage: 0.0
 
   @doc """
   Creates a new result struct.
@@ -143,7 +144,8 @@ defmodule ExPostFacto.Result do
       {:total_profit_and_loss, TotalProfitAndLoss.calculate!(result.data_points, 0.0)},
       {:win_rate, WinRate.calculate!(result)},
       {:best_trade_by_percentage, TradePercentage.best!(result)},
-      {:worst_trade_by_percentage, TradePercentage.worst!(result)}
+      {:worst_trade_by_percentage, TradePercentage.worst!(result)},
+      {:average_trade_by_percentage, TradePercentage.average!(result)}
     ]
   end
 
