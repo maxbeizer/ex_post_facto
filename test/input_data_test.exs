@@ -124,7 +124,6 @@ defmodule ExPostFactoInputDataTest do
     assert %InputData{} = result
   end
 
-  @tag :foo
   test "munge/1 handles high low open close timestamp other maps" do
     result =
       InputData.munge(%{
