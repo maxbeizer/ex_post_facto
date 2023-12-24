@@ -40,12 +40,14 @@ defmodule ExPostFactoResultTest do
     assert %{duration: nil} = Result.new(start_date: "2018-01-01")
   end
 
-  test "new/1 calculates the duration with date times which is zero for less than a day" do
-    assert %{duration: 0} =
-             Result.new(
-               start_date: "2023-12-15T22:15:27.211832Z",
-               end_date: "2023-12-15T23:15:27.211832Z"
-             )
+  test "new/1 calculates the duration with date times as a float for less than a day" do
+    %{duration: one_twenty_fourth} =
+      Result.new(
+        start_date: "2023-12-15T22:15:27.211832Z",
+        end_date: "2023-12-15T23:15:27.211832Z"
+      )
+
+    assert 1 / 24 == one_twenty_fourth
   end
 
   test "new/1 calculates the duration with date times on a daily magnitude" do

@@ -297,4 +297,53 @@ defmodule TradeStats.TradePairTest do
     # 100 * (1.0 - 2.0) / 2.0
     assert -50.0 == TradePair.result_percentage(trade_pair)
   end
+
+  test "duration/1 returns the daily duration of the trade pair a float of number of days" do
+    exit_point = %DataPoint{
+      datum: %{
+        open: 0.0,
+        timestamp: "2023-12-24"
+      },
+      index: 1,
+      action: :close_sell
+    }
+
+    enter_point = %DataPoint{
+      datum: %{
+        open: 0.0,
+        timestamp: "2023-12-23"
+      },
+      index: 0,
+      action: :sell
+    }
+
+    trade_pair = TradePair.new(exit_point, enter_point, 0.0)
+
+    assert 1.0 == TradePair.duration(trade_pair)
+  end
+
+  test "duration/1 returns the intraday duration of the trade pair a float of number of days" do
+    exit_point = %DataPoint{
+      datum: %{
+        open: 0.0,
+        timestamp: "2023-12-24T13:14:42.660407Z"
+      },
+      index: 1,
+      action: :close_sell
+    }
+
+    enter_point = %DataPoint{
+      datum: %{
+        open: 0.0,
+        timestamp: "2023-12-24T12:14:42.660407Z"
+      },
+      index: 0,
+      action: :sell
+    }
+
+    trade_pair = TradePair.new(exit_point, enter_point, 0.0)
+
+    # One hour difference
+    assert 1 / 24 == TradePair.duration(trade_pair)
+  end
 end

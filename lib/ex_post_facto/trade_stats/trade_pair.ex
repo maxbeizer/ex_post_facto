@@ -5,7 +5,11 @@ defmodule ExPostFacto.TradeStats.TradePair do
   """
 
   alias ExPostFacto.DataPoint
-  alias ExPostFacto.TradeStats.TotalProfitAndLoss
+
+  alias ExPostFacto.TradeStats.{
+    Duration,
+    TotalProfitAndLoss
+  }
 
   @enforce_keys [:exit_point, :enter_point, :balance, :previous_balance]
   defstruct [:exit_point, :enter_point, :balance, :previous_balance]
@@ -99,5 +103,12 @@ defmodule ExPostFacto.TradeStats.TradePair do
         previous_balance: previous_balance
       }) do
     100 * (enter_price - exit_price) / previous_balance
+  end
+
+  def duration(%{
+        exit_point: %{datum: %{timestamp: exit_timestamp}},
+        enter_point: %{datum: %{timestamp: enter_timestamp}}
+      }) do
+    Duration.call!(enter_timestamp, exit_timestamp)
   end
 end

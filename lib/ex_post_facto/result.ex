@@ -5,6 +5,7 @@ defmodule ExPostFacto.Result do
   alias ExPostFacto.DataPoint
 
   alias ExPostFacto.TradeStats.{
+    Duration,
     TradePercentage,
     CompilePairs,
     TotalProfitAndLoss,
@@ -75,7 +76,7 @@ defmodule ExPostFacto.Result do
       starting_balance: starting_balance,
       start_date: start_date,
       end_date: end_date,
-      duration: duration(start_date, end_date)
+      duration: Duration.call!(start_date, end_date)
     }
   end
 
@@ -148,25 +149,6 @@ defmodule ExPostFacto.Result do
       {:average_trade_by_percentage, TradePercentage.average!(result)}
     ]
   end
-
-  @spec duration(start_date :: String.t(), end_date :: String.t()) :: non_neg_integer() | nil
-  defp duration(start_date, end_date) when not is_nil(start_date) and not is_nil(end_date) do
-    with {:ok, start_date} <- Date.from_iso8601(start_date),
-         {:ok, end_date} <- Date.from_iso8601(end_date) do
-      Date.diff(end_date, start_date)
-    else
-      _ ->
-        case {DateTime.from_iso8601(start_date), DateTime.from_iso8601(end_date)} do
-          {{:ok, start_date_time, _}, {:ok, end_date_time, _}} ->
-            DateTime.diff(end_date_time, start_date_time, :day)
-
-          _ ->
-            nil
-        end
-    end
-  end
-
-  defp duration(_start_date, _end_date), do: nil
 
   defp calculate_trade_count(result, :close_buy), do: result.trades_count + 1
   defp calculate_trade_count(result, :close_sell), do: result.trades_count + 1
