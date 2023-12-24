@@ -52,4 +52,23 @@ defmodule ExPostFacto.TradeStats.TradePair do
         :break_even
     end
   end
+
+  @spec result_percentage(%__MODULE__{}) :: float()
+  def result_percentage(%{previous_balance: 0.0}), do: 0.0
+
+  def result_percentage(%{
+        exit_point: %{datum: %{open: exit_price}},
+        enter_point: %{datum: %{open: enter_price}, action: :buy},
+        previous_balance: previous_balance
+      }) do
+    100 * (exit_price - enter_price) / previous_balance
+  end
+
+  def result_percentage(%{
+        exit_point: %{datum: %{open: exit_price}},
+        enter_point: %{datum: %{open: enter_price}, action: :sell},
+        previous_balance: previous_balance
+      }) do
+    100 * (enter_price - exit_price) / previous_balance
+  end
 end

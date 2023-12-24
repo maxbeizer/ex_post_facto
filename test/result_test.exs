@@ -216,17 +216,16 @@ defmodule ExPostFactoResultTest do
     assert 0.0 == result.best_trade_by_percentage
   end
 
-  test "compile/2 calculates best win by percentage as zero when there are no winners" do
+  test "compile/2 calculates best win by percentage as negative when there are no winners" do
     result =
       %Result{data_points: [], starting_balance: 100.0}
       |> Result.add_data_point(2, build_candle(open: 10.0), :buy)
       |> Result.add_data_point(3, build_candle(open: 0.0), :close_buy)
       |> Result.compile()
 
-    assert 0.0 == result.best_trade_by_percentage
+    assert -10.0 == result.best_trade_by_percentage
   end
 
-  @tag :skip
   test "compile/2 calculates best win by percentage when there are winners" do
     result =
       %Result{data_points: [], starting_balance: 100.0}
