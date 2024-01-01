@@ -11,21 +11,19 @@ defmodule ExPostFacto.TradeStats.WinRate do
   def calculate!(%{trades_count: trades_count, trade_pairs: trade_pairs}) do
     win_count =
       trade_pairs
-      |> Enum.reduce(0, &calculate_win_count/2)
+      |> calculate_win_count!()
 
     win_count / trades_count * 100.0
   end
 
-  @spec calculate_win_count(
-          trade_pair :: TradePair.t(),
-          win_count :: non_neg_integer()
-        ) ::
-          non_neg_integer()
-  defp calculate_win_count(trade_pair, win_count) do
-    case TradePair.result(trade_pair) do
-      :win -> win_count + 1
-      :loss -> win_count
-      :break_even -> win_count
-    end
+  @spec calculate_win_count!(trade_pairs :: [TradePair.t()]) :: non_neg_integer()
+  def calculate_win_count!(trade_pairs) do
+    Enum.reduce(trade_pairs, 0, fn trade_pair, win_count ->
+      case TradePair.result(trade_pair) do
+        :win -> win_count + 1
+        :loss -> win_count
+        :break_even -> win_count
+      end
+    end)
   end
 end

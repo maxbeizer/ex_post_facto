@@ -9,6 +9,7 @@ defmodule ExPostFacto.TradeStats.DrawDown do
   Avg. Drawdown Duration       41 days 00:00:00
   """
 
+  alias ExPostFacto.Result
   alias ExPostFacto.TradeStats.Duration
 
   defstruct peak: 0,
@@ -23,7 +24,7 @@ defmodule ExPostFacto.TradeStats.DrawDown do
             average_duration: 0,
             previous_drawdown_percentage: 0
 
-  @spec call!(%{trade_pairs: [TradePair.t()]}) :: %__MODULE__{}
+  @spec call!(%Result{trade_pairs: [TradePair.t()]}) :: %__MODULE__{}
   def call!(%{trade_pairs: []}), do: %__MODULE__{}
 
   def call!(%{trade_pairs: trade_pairs}) do

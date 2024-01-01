@@ -2,9 +2,11 @@ defmodule ExPostFacto.Result do
   @moduledoc """
   The result contains the output of applying a strategy to a set of data.
   """
+  alias ExPostFacto.TradeStats.DrawDown
   alias ExPostFacto.DataPoint
 
   alias ExPostFacto.TradeStats.{
+    DrawDown,
     Duration,
     TradeDuration,
     TradePercentage,
@@ -55,7 +57,12 @@ defmodule ExPostFacto.Result do
             duration: nil,
             trades_count: 0,
             win_rate: 0.0,
+            win_count: 0,
             trade_pairs: [],
+            max_draw_down_percentage: 0.0,
+            average_draw_down_percentage: 0.0,
+            max_draw_down_duration: 0.0,
+            average_draw_down_duration: 0.0,
             best_trade_by_percentage: 0.0,
             worst_trade_by_percentage: 0.0,
             average_trade_by_percentage: 0.0,
@@ -143,15 +150,27 @@ defmodule ExPostFacto.Result do
 
   @spec calculate_trade_stats!(result :: %__MODULE__{}) :: keyword() | no_return()
   defp calculate_trade_stats!(result) do
+    %{
+      average_percentage: average_draw_down_percentage,
+      max_percentage: max_draw_down_percentage,
+      average_duration: average_draw_down_duration,
+      max_duration: max_draw_down_duration
+    } = DrawDown.call!(result)
+
     [
       {:trade_pairs, result.trade_pairs},
       {:total_profit_and_loss, TotalProfitAndLoss.calculate!(result.data_points, 0.0)},
       {:win_rate, WinRate.calculate!(result)},
+      {:win_count, WinRate.calculate_win_count!(result.trade_pairs)},
       {:best_trade_by_percentage, TradePercentage.best!(result)},
       {:worst_trade_by_percentage, TradePercentage.worst!(result)},
       {:average_trade_by_percentage, TradePercentage.average!(result)},
       {:max_trade_duration, TradeDuration.max!(result)},
-      {:average_trade_duration, TradeDuration.average!(result)}
+      {:average_trade_duration, TradeDuration.average!(result)},
+      {:average_draw_down_percentage, average_draw_down_percentage},
+      {:max_draw_down_percentage, max_draw_down_percentage},
+      {:max_draw_down_duration, max_draw_down_duration},
+      {:average_draw_down_duration, average_draw_down_duration}
     ]
   end
 
