@@ -30,32 +30,26 @@ defmodule ExPostFacto.TradeStats.DrawDown do
     drawdown =
       Enum.reduce(trade_pairs, %__MODULE__{}, fn trade_pair, acc ->
         %{
-          drawdown_percentage: drawdown_percentage,
           drawdown_sum: drawdown_sum,
-          drawdown_count: drawdown_count,
-          max_duration: max_duration,
-          total_duration: total_duration
+          max_duration: max_duration
         } = acc
 
         # Before the new peak is calculated, calculate the drawdown percentage
         previous_drawdown_percentage = calculate_drawdown_percentage(acc, trade_pair)
 
-        acc = calculate_peak(acc, trade_pair)
-        %{peak: peak} = acc
+        %{peak: peak} = acc = calculate_peak(acc, trade_pair)
 
         # Peak has been updated, calculate the drawdown percentage
         current_drawdown_percentage = calculate_drawdown_percentage(acc, trade_pair)
 
         drawdown_sum = drawdown_sum + current_drawdown_percentage
 
-        drawdown_count =
-          if current_drawdown_percentage > 0, do: drawdown_count + 1, else: drawdown_count
-
-        duration = calculate_duration(acc, trade_pair, current_drawdown_percentage)
-
-        total_duration = total_duration + duration
-
-        max_duration = max(max_duration || 0, duration)
+        %{
+          drawdown_percentage: drawdown_percentage,
+          drawdown_count: drawdown_count,
+          max_duration: max_duration,
+          total_duration: total_duration
+        } = acc = calculate_more_stats(acc, trade_pair, current_drawdown_percentage, max_duration)
 
         max_percentage =
           if current_drawdown_percentage == 0,
@@ -119,5 +113,30 @@ defmodule ExPostFacto.TradeStats.DrawDown do
 
   defp calculate_drawdown_percentage(%{peak: peak}, %{balance: balance}) do
     (peak - balance) / peak * 100.0
+  end
+
+  @spec calculate_more_stats(%__MODULE__{}, TradePair.t(), float(), number()) :: %__MODULE__{}
+  defp calculate_more_stats(acc, _, 0.0, _), do: acc
+
+  defp calculate_more_stats(acc, trade_pair, current_drawdown_percentage, max_duration) do
+    %{
+      drawdown_percentage: drawdown_percentage,
+      drawdown_count: drawdown_count,
+      total_duration: total_duration
+    } = acc
+
+    drawdown_percentage = drawdown_percentage + current_drawdown_percentage
+    drawdown_count = drawdown_count + 1
+    duration = calculate_duration(acc, trade_pair, current_drawdown_percentage)
+    total_duration = total_duration + duration
+    max_duration = max(max_duration || 0, duration)
+
+    %{
+      acc
+      | drawdown_percentage: drawdown_percentage,
+        drawdown_count: drawdown_count,
+        max_duration: max_duration,
+        total_duration: total_duration
+    }
   end
 end
