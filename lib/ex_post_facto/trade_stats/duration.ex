@@ -14,7 +14,7 @@ defmodule ExPostFacto.TradeStats.Duration do
   def call!(_, nil), do: nil
   def call!(nil, _), do: nil
 
-  def call!(start_date, end_date) do
+  def call!(start_date, end_date) when is_binary(start_date) and is_binary(end_date) do
     with {:ok, start_date} <- Date.from_iso8601(start_date),
          {:ok, end_date} <- Date.from_iso8601(end_date) do
       Date.diff(end_date, start_date)
