@@ -29,11 +29,7 @@ defmodule ExPostFacto.TradeStats.DrawDown do
   def call!(%{trade_pairs: trade_pairs}) do
     drawdown =
       Enum.reduce(trade_pairs, %__MODULE__{}, fn trade_pair, acc ->
-        %{balance: balance, exit_point: exit_point} = trade_pair
-        %{datum: %{timestamp: timestamp}} = exit_point
-
         %{
-          peak: peak,
           drawdown_percentage: drawdown_percentage,
           drawdown_sum: drawdown_sum,
           drawdown_count: drawdown_count,
@@ -41,26 +37,21 @@ defmodule ExPostFacto.TradeStats.DrawDown do
           total_duration: total_duration
         } = acc
 
-        previous_drawdown_percentage =
-          if peak == 0,
-            do: 0,
-            else: (peak - balance) / peak * 100.0
+        # Before the new peak is calculated, calculate the drawdown percentage
+        previous_drawdown_percentage = calculate_drawdown_percentage(acc, trade_pair)
 
         acc = calculate_peak(acc, trade_pair)
-        %{peak: peak, peak_time: peak_time} = acc
+        %{peak: peak} = acc
 
-        current_drawdown_percentage =
-          if balance < peak, do: (peak - balance) / peak * 100.0, else: 0.0
+        # Peak has been updated, calculate the drawdown percentage
+        current_drawdown_percentage = calculate_drawdown_percentage(acc, trade_pair)
 
         drawdown_sum = drawdown_sum + current_drawdown_percentage
 
         drawdown_count =
           if current_drawdown_percentage > 0, do: drawdown_count + 1, else: drawdown_count
 
-        duration =
-          if peak_time != nil and current_drawdown_percentage != 0,
-            do: Duration.call!(peak_time, timestamp),
-            else: 0
+        duration = calculate_duration(acc, trade_pair, current_drawdown_percentage)
 
         total_duration = total_duration + duration
 
@@ -98,6 +89,7 @@ defmodule ExPostFacto.TradeStats.DrawDown do
     }
   end
 
+  @spec calculate_peak(%__MODULE__{}, TradePair.t()) :: %__MODULE__{}
   defp calculate_peak(%{peak: 0} = acc, trade_pair) do
     %{balance: balance, exit_point: exit_point} = trade_pair
     %{datum: %{timestamp: timestamp}} = exit_point
@@ -112,4 +104,20 @@ defmodule ExPostFacto.TradeStats.DrawDown do
   end
 
   defp calculate_peak(acc, _), do: acc
+
+  @spec calculate_duration(%__MODULE__{}, TradePair.t(), float()) :: number()
+  defp calculate_duration(%{peak_time: nil}, _trade_pair, 0.0), do: 0
+
+  defp calculate_duration(%{peak_time: peak_time}, trade_pair, _) do
+    %{exit_point: exit_point} = trade_pair
+    %{datum: %{timestamp: timestamp}} = exit_point
+    Duration.call!(peak_time, timestamp)
+  end
+
+  @spec calculate_drawdown_percentage(%__MODULE__{}, TradePair.t()) :: number()
+  defp calculate_drawdown_percentage(%{peak: 0}, _trade_pair), do: 0.0
+
+  defp calculate_drawdown_percentage(%{peak: peak}, %{balance: balance}) do
+    (peak - balance) / peak * 100.0
+  end
 end
