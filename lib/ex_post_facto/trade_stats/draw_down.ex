@@ -87,37 +87,56 @@ defmodule ExPostFacto.TradeStats.DrawDown do
   @spec calculate_peak(%__MODULE__{}, TradePair.t()) :: %__MODULE__{}
   defp calculate_peak(%{peak: 0} = acc, trade_pair) do
     %{balance: balance, exit_point: exit_point} = trade_pair
-    %{datum: %{timestamp: timestamp}} = exit_point
+    timestamp = get_timestamp_from_data_point(exit_point)
     %{acc | peak: balance, peak_time: timestamp}
   end
 
   defp calculate_peak(%{peak: peak} = acc, %{balance: balance} = trade_pair)
        when balance > peak do
     %{exit_point: exit_point} = trade_pair
-    %{datum: %{timestamp: timestamp}} = exit_point
+    timestamp = get_timestamp_from_data_point(exit_point)
     %{acc | peak: balance, peak_time: timestamp}
   end
 
   defp calculate_peak(acc, _), do: acc
 
   @spec calculate_duration(%__MODULE__{}, TradePair.t(), float()) :: number()
-  defp calculate_duration(%{peak_time: nil}, _trade_pair, 0.0), do: 0
+  defp calculate_duration(%{peak_time: nil}, _trade_pair, drawdown_percentage)
+       when drawdown_percentage == 0.0,
+       do: 0
+
+  defp calculate_duration(%{peak_time: peak_time}, _trade_pair, _) when is_nil(peak_time) do
+    0
+  end
 
   defp calculate_duration(%{peak_time: peak_time}, trade_pair, _) do
     %{exit_point: exit_point} = trade_pair
-    %{datum: %{timestamp: timestamp}} = exit_point
-    Duration.call!(peak_time, timestamp)
+    timestamp = get_timestamp_from_data_point(exit_point)
+
+    case {peak_time, timestamp} do
+      {nil, _} -> 0
+      {_, nil} -> 0
+      _ -> Duration.call!(peak_time, timestamp)
+    end
   end
 
   @spec calculate_drawdown_percentage(%__MODULE__{}, TradePair.t()) :: number()
-  defp calculate_drawdown_percentage(%{peak: 0}, _trade_pair), do: 0.0
+  defp calculate_drawdown_percentage(%{peak: peak}, _trade_pair) when peak == 0, do: 0.0
 
   defp calculate_drawdown_percentage(%{peak: peak}, %{balance: balance}) do
-    (peak - balance) / peak * 100.0
+    case peak do
+      0 -> 0.0
+      _ -> (peak - balance) / peak * 100.0
+    end
   end
 
+  # Helper function to safely extract timestamp from data point
+  defp get_timestamp_from_data_point(%{datum: %{timestamp: timestamp}}), do: timestamp
+  defp get_timestamp_from_data_point(_), do: nil
+
   @spec calculate_more_stats(%__MODULE__{}, TradePair.t(), float(), number()) :: %__MODULE__{}
-  defp calculate_more_stats(acc, _, 0.0, _), do: acc
+  defp calculate_more_stats(acc, _, drawdown_percentage, _) when drawdown_percentage == 0.0,
+    do: acc
 
   defp calculate_more_stats(acc, trade_pair, current_drawdown_percentage, max_duration) do
     %{
@@ -129,8 +148,8 @@ defmodule ExPostFacto.TradeStats.DrawDown do
     drawdown_percentage = drawdown_percentage + current_drawdown_percentage
     drawdown_count = drawdown_count + 1
     duration = calculate_duration(acc, trade_pair, current_drawdown_percentage)
-    total_duration = total_duration + duration
-    max_duration = max(max_duration || 0, duration)
+    total_duration = total_duration + (duration || 0)
+    max_duration = max(max_duration || 0, duration || 0)
 
     %{
       acc

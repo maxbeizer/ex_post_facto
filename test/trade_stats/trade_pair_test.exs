@@ -27,7 +27,7 @@ defmodule TradeStats.TradePairTest do
     assert exit_point == trade_pair.exit_point
     assert enter_point == trade_pair.enter_point
     assert 1.0 == trade_pair.balance
-    assert 0.0 = trade_pair.previous_balance
+    assert 0.0 == trade_pair.previous_balance
   end
 
   test "result/1 returns win for successful buy" do
