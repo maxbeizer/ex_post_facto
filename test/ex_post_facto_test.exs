@@ -31,8 +31,7 @@ defmodule ExPostFactoTest do
   end
 
   test "backtest/3 returns an output struct" do
-    assert {:ok, %Output{}} =
-             ExPostFacto.backtest(@basic_data_point, {Noop, :noop, []})
+    assert {:ok, %Output{}} = ExPostFacto.backtest(@basic_data_point, {Noop, :noop, []})
   end
 
   test "backtest/3 returns an initial starting balance of 0.0 if not specified" do
