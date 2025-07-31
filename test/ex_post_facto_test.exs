@@ -326,6 +326,59 @@ defmodule ExPostFactoTest do
       assert result.method == :grid_search
       assert result.metric == :sharpe_ratio
     end
+
+    test "performs walk-forward optimization successfully" do
+      data = generate_trending_test_data(150)
+      
+      {:ok, result} = ExPostFacto.optimize(
+        data,
+        ExPostFacto.ExampleStrategies.SmaStrategy,
+        [fast_period: [5, 7], slow_period: [15, 20]],
+        method: :walk_forward,
+        training_window: 40,
+        validation_window: 20,
+        step_size: 15
+      )
+      
+      assert result.method == :walk_forward
+      assert Map.has_key?(result, :windows)
+      assert Map.has_key?(result, :summary)
+      assert Map.has_key?(result, :parameters_stability)
+    end
+  end
+
+  describe "heatmap/3" do
+    test "generates heatmap from optimization results" do
+      data = generate_trending_test_data(25)
+      
+      {:ok, opt_result} = ExPostFacto.optimize(
+        data,
+        ExPostFacto.ExampleStrategies.SmaStrategy,
+        [fast_period: 5..7, slow_period: 15..17],
+        method: :grid_search
+      )
+      
+      {:ok, heatmap} = ExPostFacto.heatmap(opt_result, :fast_period, :slow_period)
+      
+      assert heatmap.x_param == :fast_period
+      assert heatmap.y_param == :slow_period
+      assert is_list(heatmap.x_values)
+      assert is_list(heatmap.y_values)
+      assert is_list(heatmap.scores)
+    end
+
+    test "returns error for invalid heatmap parameters" do
+      data = generate_trending_test_data(15)
+      
+      {:ok, opt_result} = ExPostFacto.optimize(
+        data,
+        ExPostFacto.ExampleStrategies.SmaStrategy,
+        [fast_period: [5], slow_period: [15]]
+      )
+      
+      {:error, message} = ExPostFacto.heatmap(opt_result, :invalid_param, :slow_period)
+      assert String.contains?(message, "not found in optimization results")
+    end
   end
 
   # Helper function to generate trending test data

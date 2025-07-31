@@ -206,4 +206,112 @@ defmodule ExPostFacto.OptimizerTest do
       build_candle(open: open, close: close, high: high, low: low)
     end)
   end
+
+  describe "heatmap/3" do
+    test "generates heatmap data from grid search results" do
+      data = generate_trending_data(30, 10.0, 0.05)
+
+      param_ranges = [
+        fast_period: 5..7,
+        slow_period: 15..17
+      ]
+
+      {:ok, optimization_result} = Optimizer.grid_search(data, SmaStrategy, param_ranges, [])
+      {:ok, heatmap} = Optimizer.heatmap(optimization_result, :fast_period, :slow_period)
+
+      # Verify heatmap structure
+      assert Map.has_key?(heatmap, :x_values)
+      assert Map.has_key?(heatmap, :y_values)
+      assert Map.has_key?(heatmap, :scores)
+      assert Map.has_key?(heatmap, :x_param)
+      assert Map.has_key?(heatmap, :y_param)
+
+      # Verify content
+      assert heatmap.x_param == :fast_period
+      assert heatmap.y_param == :slow_period
+      assert heatmap.x_values == [5, 6, 7]
+      assert heatmap.y_values == [15, 16, 17]
+      
+      # Should have 3x3 score matrix
+      assert length(heatmap.scores) == 3
+      assert Enum.all?(heatmap.scores, fn row -> length(row) == 3 end)
+    end
+
+    test "returns error for invalid parameters" do
+      data = generate_simple_data(10)
+      {:ok, result} = Optimizer.grid_search(data, SmaStrategy, [fast_period: [5], slow_period: [15]], [])
+
+      # Same parameter for both axes
+      {:error, message} = Optimizer.heatmap(result, :fast_period, :fast_period)
+      assert String.contains?(message, "X and Y parameters must be different")
+
+      # Non-existent parameter
+      {:error, message} = Optimizer.heatmap(result, :fast_period, :non_existent)
+      assert String.contains?(message, "not found in optimization results")
+    end
+  end
+
+  describe "walk_forward/4" do
+    test "performs walk-forward analysis successfully" do
+      # Generate enough data for walk-forward analysis
+      data = generate_trending_data(200, 10.0, 0.02)
+
+      param_ranges = [
+        fast_period: [5, 7],
+        slow_period: [15, 20]
+      ]
+
+      opts = [
+        training_window: 50,
+        validation_window: 25,
+        step_size: 25,
+        maximize: :total_return_pct
+      ]
+
+      {:ok, result} = Optimizer.walk_forward(data, SmaStrategy, param_ranges, opts)
+
+      # Verify result structure
+      assert Map.has_key?(result, :windows)
+      assert Map.has_key?(result, :summary)
+      assert Map.has_key?(result, :parameters_stability)
+      assert result.method == :walk_forward
+
+      # Should have multiple windows
+      assert length(result.windows) > 1
+
+      # Verify summary structure
+      summary = result.summary
+      assert Map.has_key?(summary, :total_windows)
+      assert Map.has_key?(summary, :valid_windows)
+      assert Map.has_key?(summary, :average_validation_score)
+
+      # Verify stability analysis
+      stability = result.parameters_stability
+      assert Map.has_key?(stability, :parameter_stability)
+      assert Map.has_key?(stability, :overall_stability)
+    end
+
+    test "returns error for insufficient data" do
+      data = generate_simple_data(50)  # Not enough for default windows
+
+      {:error, message} = Optimizer.walk_forward(data, SmaStrategy, [fast_period: [5]], [])
+      assert String.contains?(message, "Insufficient data")
+    end
+
+    test "handles custom window configurations" do
+      data = generate_trending_data(100, 10.0, 0.03)
+
+      opts = [
+        training_window: 20,
+        validation_window: 10,
+        step_size: 10
+      ]
+
+      {:ok, result} = Optimizer.walk_forward(data, SmaStrategy, [fast_period: [5], slow_period: [15]], opts)
+
+      # Should have windows based on the step size
+      expected_windows = (100 - 30) ÷ 10 + 1  # (data_length - window_size) / step_size + 1
+      assert length(result.windows) == expected_windows
+    end
+  end
 end

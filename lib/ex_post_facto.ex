@@ -159,9 +159,47 @@ defmodule ExPostFacto do
         Optimizer.grid_search(data, strategy_module, param_ranges, opts)
       :random_search ->
         Optimizer.random_search(data, strategy_module, param_ranges, opts)
+      :walk_forward ->
+        Optimizer.walk_forward(data, strategy_module, param_ranges, opts)
       _ ->
-        {:error, "Unsupported optimization method: #{method}. Supported methods: :grid_search, :random_search"}
+        {:error, "Unsupported optimization method: #{method}. Supported methods: :grid_search, :random_search, :walk_forward"}
     end
+  end
+
+  @doc """
+  Generate a parameter heatmap from optimization results.
+
+  Creates a 2D visualization data structure for analyzing the parameter space
+  of optimization results. Particularly useful for understanding the relationship
+  between two parameters and their impact on strategy performance.
+
+  ## Parameters
+
+  - `optimization_result` - Result from `optimize/4` with `:grid_search` or `:random_search`
+  - `x_param` - Parameter name for X-axis
+  - `y_param` - Parameter name for Y-axis
+
+  ## Example
+
+      # First run optimization
+      {:ok, results} = ExPostFacto.optimize(
+        data, MyStrategy,
+        [fast: 5..15, slow: 20..40],
+        method: :grid_search
+      )
+
+      # Generate heatmap
+      {:ok, heatmap} = ExPostFacto.heatmap(results, :fast, :slow)
+
+      # Use heatmap data for visualization
+      IO.inspect(heatmap.x_values)  # [5, 6, 7, ...]
+      IO.inspect(heatmap.y_values)  # [20, 21, 22, ...]
+      IO.inspect(heatmap.scores)    # [[0.1, 0.2, ...], [0.3, 0.4, ...]]
+
+  """
+  @spec heatmap(map(), atom(), atom()) :: {:ok, map()} | {:error, String.t()}
+  def heatmap(optimization_result, x_param, y_param) do
+    Optimizer.heatmap(optimization_result, x_param, y_param)
   end
 
   @doc """
