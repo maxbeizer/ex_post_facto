@@ -25,3 +25,7 @@ ex_post_facto-*.tar
 # Temporary files, for example, from tests.
 /tmp/
 .elixir_ls
+
+# Demo and test scripts
+demo.exs
+simple_test.exs

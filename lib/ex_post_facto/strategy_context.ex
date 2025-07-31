@@ -65,7 +65,7 @@ defmodule ExPostFacto.StrategyContext do
   def set_action(action) when action in [:buy, :sell, :close_buy, :close_sell] do
     if Process.whereis(__MODULE__) do
       Agent.update(__MODULE__, fn context ->
-        %{context | action: action}
+        Map.put(context, :action, action)
       end)
     end
 
@@ -130,7 +130,7 @@ defmodule ExPostFacto.StrategyContext do
   def clear_action do
     if Process.whereis(__MODULE__) do
       Agent.update(__MODULE__, fn context ->
-        %{context | action: nil}
+        Map.put(context, :action, nil)
       end)
     end
   end
