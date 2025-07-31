@@ -72,7 +72,11 @@ defmodule ExPostFactoTest do
 
     {:ok, output} = ExPostFacto.backtest(example_data, mfa, validate_data: false)
 
-    assert %Result{} == output.result
+    assert %Result{} = output.result
+    # Should have comprehensive stats calculated
+    assert is_float(output.result.total_return_pct)
+    assert is_binary(output.result.sqn_interpretation)
+    assert is_binary(output.result.kelly_interpretation)
   end
 
   test "backtest/3 collects data points from the applied strategy" do
