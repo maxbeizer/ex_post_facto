@@ -1,0 +1,513 @@
+# ExPostFacto Tutorial: Building Your First Trading Strategy
+
+```elixir
+Mix.install([
+  {:ex_post_facto, path: Path.expand(".")}
+])
+```
+
+## Introduction
+
+Welcome to the ExPostFacto tutorial! In this interactive notebook, you'll learn how to:
+
+1. Load and validate market data
+2. Create simple trading strategies
+3. Run backtests and analyze results
+4. Optimize strategy parameters
+5. Use technical indicators effectively
+
+Let's start by exploring what ExPostFacto offers.
+
+## What is Backtesting?
+
+Backtesting is the process of testing a trading strategy using historical data to see how it would have performed. This helps us:
+
+- Evaluate strategy performance before risking real money
+- Compare different strategies objectively
+- Optimize parameters for better results
+- Understand risk and drawdown characteristics
+
+## Setting Up Market Data
+
+First, let's create some sample market data to work with:
+
+```elixir
+# Create sample OHLCV data representing a trending market
+sample_data = 
+  1..100
+  |> Enum.map(fn day ->
+    base_price = 100 + day * 0.5  # Upward trend
+    noise = (:rand.uniform() - 0.5) * 2  # Random noise
+    
+    open = base_price + noise
+    close = base_price + noise + (:rand.uniform() - 0.5)
+    high = max(open, close) + :rand.uniform() * 2
+    low = min(open, close) - :rand.uniform() * 2
+    
+    %{
+      open: Float.round(open, 2),
+      high: Float.round(high, 2), 
+      low: Float.round(low, 2),
+      close: Float.round(close, 2),
+      volume: 1_000_000 + :rand.uniform(500_000),
+      timestamp: Date.add(~D[2023-01-01], day - 1) |> Date.to_string()
+    }
+  end)
+
+# Let's look at the first few data points
+Enum.take(sample_data, 5) |> IO.inspect(label: "Sample Data")
+```
+
+## Data Validation
+
+ExPostFacto includes built-in data validation to catch common issues:
+
+```elixir
+# Validate our sample data
+case ExPostFacto.validate_data(sample_data) do
+  :ok -> 
+    IO.puts("✅ Data validation passed!")
+  {:error, reason} -> 
+    IO.puts("❌ Data validation failed: #{reason}")
+end
+
+# Let's also try with some invalid data to see what happens
+invalid_data = [
+  %{open: 100.0, high: 95.0, low: 98.0, close: 102.0}  # high < low!
+]
+
+case ExPostFacto.validate_data(invalid_data) do
+  :ok -> 
+    IO.puts("✅ Invalid data somehow passed")
+  {:error, reason} -> 
+    IO.puts("❌ Correctly caught invalid data: #{reason}")
+end
+```
+
+## Your First Strategy: Buy and Hold
+
+Let's start with the simplest possible strategy - buy and hold:
+
+```elixir
+defmodule BuyAndHoldStrategy do
+  @moduledoc """
+  Simple buy and hold strategy - buy on the first day and hold forever.
+  """
+  
+  use ExPostFacto.Strategy
+  
+  def init(_opts) do
+    {:ok, %{bought: false}}
+  end
+  
+  def next(state) do
+    if not state.bought do
+      buy()
+      {:ok, %{state | bought: true}}
+    else
+      {:ok, state}
+    end
+  end
+end
+
+# Run the backtest
+{:ok, result} = ExPostFacto.backtest(
+  sample_data,
+  {BuyAndHoldStrategy, []},
+  starting_balance: 10_000.0
+)
+
+# Display results
+IO.puts("=== Buy and Hold Results ===")
+IO.puts("Total P&L: $#{Float.round(result.result.total_profit_and_loss, 2)}")
+IO.puts("Total Return: #{Float.round(result.result.total_return_percentage, 2)}%")
+IO.puts("Number of Trades: #{result.result.trades_count}")
+IO.puts("Win Rate: #{Float.round(result.result.win_rate, 2)}%")
+```
+
+## A More Sophisticated Strategy: Simple Moving Average
+
+Now let's create a strategy that uses technical analysis:
+
+```elixir
+defmodule SimpleSMAStrategy do
+  @moduledoc """
+  Simple Moving Average strategy:
+  - Buy when price is above the SMA
+  - Sell when price is below the SMA
+  """
+  
+  use ExPostFacto.Strategy
+  
+  def init(opts) do
+    sma_period = Keyword.get(opts, :sma_period, 20)
+    
+    {:ok, %{
+      sma_period: sma_period,
+      price_history: []
+    }}
+  end
+  
+  def next(state) do
+    current_price = data().close
+    updated_history = [current_price | state.price_history]
+    
+    # Only start trading when we have enough history
+    if length(updated_history) >= state.sma_period do
+      # Calculate SMA using built-in indicator
+      sma_values = indicator(:sma, updated_history, state.sma_period)
+      current_sma = List.first(sma_values)
+      
+      current_position = position()
+      
+      cond do
+        # Price above SMA and not already long
+        current_price > current_sma and current_position != :long ->
+          if current_position == :short, do: close_sell()
+          buy()
+          
+        # Price below SMA and not already short  
+        current_price < current_sma and current_position != :short ->
+          if current_position == :long, do: close_buy()
+          sell()
+          
+        true ->
+          :ok
+      end
+    end
+    
+    {:ok, %{state | price_history: updated_history}}
+  end
+end
+
+# Test our SMA strategy
+{:ok, sma_result} = ExPostFacto.backtest(
+  sample_data,
+  {SimpleSMAStrategy, [sma_period: 10]},
+  starting_balance: 10_000.0
+)
+
+IO.puts("=== Simple SMA Strategy Results ===")
+IO.puts("Total P&L: $#{Float.round(sma_result.result.total_profit_and_loss, 2)}")
+IO.puts("Total Return: #{Float.round(sma_result.result.total_return_percentage, 2)}%")
+IO.puts("Number of Trades: #{sma_result.result.trades_count}")
+IO.puts("Win Rate: #{Float.round(sma_result.result.win_rate, 2)}%")
+IO.puts("Best Trade: #{Float.round(sma_result.result.best_trade_percentage, 2)}%")
+IO.puts("Worst Trade: #{Float.round(sma_result.result.worst_trade_percentage, 2)}%")
+```
+
+## Comparing Strategies
+
+Let's compare our strategies side by side:
+
+```elixir
+strategies = [
+  {"Buy & Hold", result.result},
+  {"SMA Strategy", sma_result.result}
+]
+
+IO.puts("=== Strategy Comparison ===")
+IO.puts(String.pad_trailing("Strategy", 15) <> " | " <> 
+        String.pad_trailing("Total P&L", 12) <> " | " <> 
+        String.pad_trailing("Return %", 10) <> " | " <> 
+        String.pad_trailing("Trades", 8) <> " | " <> 
+        "Win Rate %")
+IO.puts(String.duplicate("-", 70))
+
+for {name, result} <- strategies do
+  IO.puts(
+    String.pad_trailing(name, 15) <> " | " <>
+    String.pad_trailing("$#{Float.round(result.total_profit_and_loss, 2)}", 12) <> " | " <>
+    String.pad_trailing("#{Float.round(result.total_return_percentage, 2)}", 10) <> " | " <>
+    String.pad_trailing("#{result.trades_count}", 8) <> " | " <>
+    "#{Float.round(result.win_rate, 2)}"
+  )
+end
+```
+
+## Using Built-in Indicators
+
+ExPostFacto includes many technical indicators. Let's create a strategy using RSI:
+
+```elixir
+defmodule RSIStrategy do
+  @moduledoc """
+  RSI mean reversion strategy:
+  - Buy when RSI < 30 (oversold)
+  - Sell when RSI > 70 (overbought)
+  """
+  
+  use ExPostFacto.Strategy
+  
+  def init(opts) do
+    rsi_period = Keyword.get(opts, :rsi_period, 14)
+    oversold = Keyword.get(opts, :oversold, 30)
+    overbought = Keyword.get(opts, :overbought, 70)
+    
+    {:ok, %{
+      rsi_period: rsi_period,
+      oversold: oversold,
+      overbought: overbought,
+      price_history: []
+    }}
+  end
+  
+  def next(state) do
+    current_price = data().close
+    updated_history = [current_price | state.price_history]
+    
+    # Need enough data for RSI calculation
+    if length(updated_history) >= state.rsi_period + 1 do
+      rsi_values = indicator(:rsi, updated_history, state.rsi_period)
+      current_rsi = List.first(rsi_values)
+      
+      current_position = position()
+      
+      cond do
+        # RSI oversold - buy signal
+        current_rsi < state.oversold and current_position != :long ->
+          if current_position == :short, do: close_sell()
+          buy()
+          
+        # RSI overbought - sell signal
+        current_rsi > state.overbought and current_position != :short ->
+          if current_position == :long, do: close_buy()
+          sell()
+          
+        true ->
+          :ok
+      end
+    end
+    
+    {:ok, %{state | price_history: updated_history}}
+  end
+end
+
+# Test RSI strategy
+{:ok, rsi_result} = ExPostFacto.backtest(
+  sample_data,
+  {RSIStrategy, [rsi_period: 14, oversold: 25, overbought: 75]},
+  starting_balance: 10_000.0
+)
+
+IO.puts("=== RSI Strategy Results ===")
+IO.puts("Total P&L: $#{Float.round(rsi_result.result.total_profit_and_loss, 2)}")
+IO.puts("Total Return: #{Float.round(rsi_result.result.total_return_percentage, 2)}%")
+IO.puts("Number of Trades: #{rsi_result.result.trades_count}")
+IO.puts("Win Rate: #{Float.round(rsi_result.result.win_rate, 2)}%")
+```
+
+## Strategy Optimization
+
+One of ExPostFacto's powerful features is parameter optimization. Let's find the best SMA period:
+
+```elixir
+# Optimize the SMA strategy parameters
+{:ok, optimization_result} = ExPostFacto.optimize(
+  sample_data,
+  SimpleSMAStrategy,
+  [sma_period: 5..30],  # Test SMA periods from 5 to 30
+  maximize: :total_return_percentage,
+  starting_balance: 10_000.0
+)
+
+IO.puts("=== Optimization Results ===")
+IO.puts("Best Parameters: #{inspect(optimization_result.best_params)}")
+IO.puts("Best Score (Return %): #{Float.round(optimization_result.best_score, 2)}%")
+IO.puts("Total Combinations Tested: #{length(optimization_result.all_results)}")
+
+# Show top 5 parameter combinations
+IO.puts("\n=== Top 5 Results ===")
+optimization_result.all_results
+|> Enum.sort_by(& &1.score, :desc)
+|> Enum.take(5)
+|> Enum.with_index(1)
+|> Enum.each(fn {result, index} ->
+  IO.puts("#{index}. SMA Period: #{result.params[:sma_period]}, Return: #{Float.round(result.score, 2)}%")
+end)
+```
+
+## Advanced Strategy: MACD Crossover
+
+Let's create a more complex strategy using MACD (Moving Average Convergence Divergence):
+
+```elixir
+defmodule MACDStrategy do
+  @moduledoc """
+  MACD crossover strategy:
+  - Buy when MACD line crosses above signal line
+  - Sell when MACD line crosses below signal line
+  """
+  
+  use ExPostFacto.Strategy
+  
+  def init(opts) do
+    fast_period = Keyword.get(opts, :fast_period, 12)
+    slow_period = Keyword.get(opts, :slow_period, 26)
+    signal_period = Keyword.get(opts, :signal_period, 9)
+    
+    {:ok, %{
+      fast_period: fast_period,
+      slow_period: slow_period,
+      signal_period: signal_period,
+      price_history: [],
+      macd_history: [],
+      signal_history: []
+    }}
+  end
+  
+  def next(state) do
+    current_price = data().close
+    updated_history = [current_price | state.price_history]
+    
+    # Need enough data for MACD calculation
+    min_required = state.slow_period + state.signal_period
+    if length(updated_history) >= min_required do
+      # Calculate MACD and signal line
+      {macd_line, signal_line, _histogram} = 
+        indicator(:macd, updated_history, {state.fast_period, state.slow_period, state.signal_period})
+      
+      current_macd = List.first(macd_line)
+      current_signal = List.first(signal_line)
+      
+      updated_macd_history = [current_macd | state.macd_history]
+      updated_signal_history = [current_signal | state.signal_history]
+      
+      # Check for crossovers
+      if length(updated_macd_history) >= 2 do
+        current_position = position()
+        
+        cond do
+          # MACD crosses above signal - buy
+          crossover?(updated_macd_history, updated_signal_history) and current_position != :long ->
+            if current_position == :short, do: close_sell()
+            buy()
+            
+          # MACD crosses below signal - sell
+          crossover?(updated_signal_history, updated_macd_history) and current_position != :short ->
+            if current_position == :long, do: close_buy()
+            sell()
+            
+          true ->
+            :ok
+        end
+      end
+      
+      {:ok, %{state | 
+        price_history: updated_history,
+        macd_history: updated_macd_history,
+        signal_history: updated_signal_history
+      }}
+    else
+      {:ok, %{state | price_history: updated_history}}
+    end
+  end
+end
+
+# Test MACD strategy
+{:ok, macd_result} = ExPostFacto.backtest(
+  sample_data,
+  {MACDStrategy, []},
+  starting_balance: 10_000.0
+)
+
+IO.puts("=== MACD Strategy Results ===")
+IO.puts("Total P&L: $#{Float.round(macd_result.result.total_profit_and_loss, 2)}")
+IO.puts("Total Return: #{Float.round(macd_result.result.total_return_percentage, 2)}%")
+IO.puts("Number of Trades: #{macd_result.result.trades_count}")
+IO.puts("Win Rate: #{Float.round(macd_result.result.win_rate, 2)}%")
+```
+
+## Analyzing Results
+
+ExPostFacto provides comprehensive statistics. Let's examine them:
+
+```elixir
+# Let's analyze the MACD strategy results in detail
+result = macd_result.result
+
+IO.puts("=== Detailed Performance Analysis ===")
+IO.puts("Starting Balance: $10,000.00")
+IO.puts("Ending Balance: $#{Float.round(10_000 + result.total_profit_and_loss, 2)}")
+IO.puts("Total Return: #{Float.round(result.total_return_percentage, 2)}%")
+IO.puts("")
+IO.puts("=== Trade Statistics ===")
+IO.puts("Total Trades: #{result.trades_count}")
+IO.puts("Winning Trades: #{result.wins_count}")
+IO.puts("Losing Trades: #{result.trades_count - result.wins_count}")
+IO.puts("Win Rate: #{Float.round(result.win_rate, 2)}%")
+IO.puts("")
+IO.puts("=== Best/Worst Trades ===")
+IO.puts("Best Trade: #{Float.round(result.best_trade_percentage, 2)}%")
+IO.puts("Worst Trade: #{Float.round(result.worst_trade_percentage, 2)}%")
+IO.puts("Average Trade: #{Float.round(result.average_trade_percentage, 2)}%")
+IO.puts("")
+IO.puts("=== Risk Metrics ===")
+IO.puts("Max Drawdown: #{Float.round(result.max_draw_down_percentage, 2)}%")
+IO.puts("Average Drawdown: #{Float.round(result.average_draw_down_percentage, 2)}%")
+
+# Show some trade pairs if available
+if length(result.trade_pairs) > 0 do
+  IO.puts("\n=== Recent Trades ===")
+  result.trade_pairs
+  |> Enum.take(5)
+  |> Enum.with_index(1)
+  |> Enum.each(fn {trade, index} ->
+    IO.puts("#{index}. #{trade.action} -> #{trade.close_action}: #{Float.round(trade.percentage, 2)}%")
+  end)
+end
+```
+
+## Error Handling and Validation
+
+ExPostFacto includes enhanced error handling. Let's see it in action:
+
+```elixir
+# Try with invalid data
+invalid_strategy_data = [
+  %{open: 100, high: 90, low: 95, close: 85}  # Invalid: high < low
+]
+
+case ExPostFacto.backtest(
+  invalid_strategy_data,
+  {SimpleSMAStrategy, []},
+  enhanced_validation: true,
+  debug: true
+) do
+  {:ok, result} ->
+    IO.puts("Unexpected success: #{inspect(result)}")
+  {:error, error} ->
+    IO.puts("Correctly caught error: #{error}")
+end
+
+# Test with valid data but enhanced validation
+{:ok, enhanced_result} = ExPostFacto.backtest(
+  sample_data,
+  {SimpleSMAStrategy, [sma_period: 10]},
+  enhanced_validation: true,
+  debug: false,
+  starting_balance: 10_000.0
+)
+
+IO.puts("Enhanced validation passed successfully!")
+```
+
+## Next Steps
+
+Congratulations! You've learned the basics of ExPostFacto. Here's what to explore next:
+
+1. **Try different indicators**: Experiment with Bollinger Bands, Stochastic, etc.
+2. **Combine multiple signals**: Create strategies that use multiple indicators
+3. **Add risk management**: Implement stop-losses and position sizing
+4. **Test on real data**: Load actual market data from CSV files
+5. **Optimize parameters**: Use grid search and walk-forward analysis
+6. **Create custom indicators**: Build your own technical indicators
+
+## Resources
+
+- **[Strategy API Guide](docs/STRATEGY_API.md)** - Detailed documentation on the Strategy behaviour
+- **[Best Practices](docs/BEST_PRACTICES.md)** - Guidelines for effective strategy development  
+- **[Migration Guide](docs/MIGRATION_GUIDE.md)** - Moving from other backtesting libraries
+- **Example Strategies** - Check `lib/ex_post_facto/example_strategies/` for more examples
+
+Happy backtesting! 🚀

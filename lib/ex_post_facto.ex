@@ -1,8 +1,106 @@
 defmodule ExPostFacto do
   @moduledoc """
-  ExPostFacto is a library for backtesting trading strategies. It is still under
-  development but takes a lot of inspiration from various Python libraries in
-  this space.
+  A comprehensive backtesting library for trading strategies written in Elixir.
+
+  ExPostFacto provides professional-grade backtesting capabilities with an intuitive API,
+  built-in data validation, technical indicators, and performance optimization. Whether you're
+  testing simple moving average strategies or complex multi-indicator systems, ExPostFacto
+  makes it easy to validate your trading ideas with historical data.
+
+  ## Quick Start
+
+      # Sample market data
+      market_data = [
+        %{open: 100.0, high: 105.0, low: 98.0, close: 102.0, timestamp: "2023-01-01"},
+        %{open: 102.0, high: 108.0, low: 101.0, close: 106.0, timestamp: "2023-01-02"}
+      ]
+
+      # Run a simple backtest
+      {:ok, result} = ExPostFacto.backtest(
+        market_data,
+        {MyStrategy, :call, []},
+        starting_balance: 10_000.0
+      )
+
+      # Access results
+      IO.puts("Total P&L: $\#{result.result.total_profit_and_loss}")
+      IO.puts("Win Rate: \#{result.result.win_rate}%")
+
+  ## Key Features
+
+  - **Multiple Data Formats**: CSV files, JSON, lists of maps
+  - **Data Validation & Cleaning**: Automatic OHLCV validation and data cleaning
+  - **Strategy Framework**: Simple MFA functions or advanced Strategy behaviours
+  - **Technical Indicators**: 20+ built-in indicators (SMA, RSI, MACD, etc.)
+  - **Parameter Optimization**: Grid search, random search, walk-forward analysis
+  - **Comprehensive Analytics**: 30+ performance metrics and risk analysis
+  - **Streaming Support**: Memory-efficient processing for large datasets
+  - **Concurrent Processing**: Leverage multi-core systems for optimization
+
+  ## Strategy Development
+
+  ExPostFacto supports two approaches to strategy development:
+
+  ### Simple MFA Functions
+
+      defmodule MySimpleStrategy do
+        def call(data, _result) do
+          if data.close > 100.0, do: :buy, else: :sell
+        end
+      end
+
+  ### Advanced Strategy Behaviours
+
+      defmodule MyAdvancedStrategy do
+        use ExPostFacto.Strategy
+
+        def init(opts) do
+          {:ok, %{threshold: Keyword.get(opts, :threshold, 100.0)}}
+        end
+
+        def next(state) do
+          if data().close > state.threshold do
+            buy()
+          else
+            sell()
+          end
+          {:ok, state}
+        end
+      end
+
+  ## Data Handling
+
+  ExPostFacto automatically handles various data formats:
+
+      # CSV files
+      {:ok, result} = ExPostFacto.backtest("market_data.csv", strategy)
+
+      # Lists of maps
+      {:ok, result} = ExPostFacto.backtest(market_data_list, strategy)
+
+      # JSON strings  
+      {:ok, result} = ExPostFacto.backtest(json_string, strategy)
+
+  ## Parameter Optimization
+
+      # Find optimal parameters
+      {:ok, result} = ExPostFacto.optimize(
+        market_data,
+        MyStrategy,
+        [param1: 5..15, param2: 20..30],
+        maximize: :sharpe_ratio
+      )
+
+  ## Main Functions
+
+  - `backtest/3` - Run a backtest with given data and strategy
+  - `backtest!/3` - Same as `backtest/3` but raises on error
+  - `optimize/4` - Find optimal strategy parameters
+  - `backtest_stream/3` - Memory-efficient backtesting for large datasets
+  - `validate_data/1` - Validate OHLCV data structure
+  - `clean_data/1` - Clean and preprocess market data
+
+  For detailed guides and examples, see the documentation in the `docs/` directory.
   """
 
   alias ExPostFacto.{
