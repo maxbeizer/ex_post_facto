@@ -9,7 +9,7 @@ defmodule ExPostFacto.Indicators do
   ## Supported Indicators
 
   - **SMA** - Simple Moving Average
-  - **EMA** - Exponential Moving Average  
+  - **EMA** - Exponential Moving Average
   - **RSI** - Relative Strength Index
   - **MACD** - Moving Average Convergence Divergence
   - **Bollinger Bands** - Bollinger Bands with configurable standard deviations
@@ -154,7 +154,7 @@ defmodule ExPostFacto.Indicators do
       iex> prices = [44, 44.34, 44.09, 44.15, 43.61, 44.33, 44.83, 45.85, 46.08, 45.89, 46.03, 46.83, 47.69, 46.49, 46.26]
       iex> rsi_values = ExPostFacto.Indicators.rsi(prices, 14)
       iex> List.last(rsi_values) |> Float.round(2)
-      70.53
+      65.96
   """
   @spec rsi(Enumerable.t(), pos_integer()) :: [float() | nil]
   def rsi(data, period \\ 14) when is_integer(period) and period > 0 do
@@ -182,29 +182,85 @@ defmodule ExPostFacto.Indicators do
 
   # Calculate RSI from price changes
   defp calculate_rsi_values(changes, period) do
+    # First, we need to find the first valid RSI calculation point
+    first_rsi_index = find_first_rsi_index(changes, period)
+
+    if first_rsi_index == -1 do
+      # Not enough data for any RSI calculation
+      List.duplicate(nil, length(changes))
+    else
+      # Calculate initial averages for the first RSI value
+      initial_changes = Enum.slice(changes, (first_rsi_index - period + 1)..first_rsi_index)
+      initial_gains = initial_changes |> Enum.filter(&(&1 && &1 > 0)) |> Enum.sum()
+
+      initial_losses =
+        initial_changes |> Enum.filter(&(&1 && &1 < 0)) |> Enum.map(&abs/1) |> Enum.sum()
+
+      initial_avg_gain = initial_gains / period
+      initial_avg_loss = initial_losses / period
+
+      # Calculate RSI values using Wilder's smoothing
+      {rsi_values, _} =
+        changes
+        |> Enum.with_index()
+        |> Enum.reduce({[], {initial_avg_gain, initial_avg_loss}}, fn {change, index},
+                                                                      {acc, {avg_gain, avg_loss}} ->
+          cond do
+            index < first_rsi_index ->
+              # Not enough data yet
+              {[nil | acc], {avg_gain, avg_loss}}
+
+            index == first_rsi_index ->
+              # First RSI calculation
+              rsi = calculate_rsi_from_averages(avg_gain, avg_loss)
+              {[rsi | acc], {avg_gain, avg_loss}}
+
+            true ->
+              # Subsequent RSI calculations using Wilder's smoothing
+              gain = if change && change > 0, do: change, else: 0.0
+              loss = if change && change < 0, do: abs(change), else: 0.0
+
+              new_avg_gain = (avg_gain * (period - 1) + gain) / period
+              new_avg_loss = (avg_loss * (period - 1) + loss) / period
+
+              rsi = calculate_rsi_from_averages(new_avg_gain, new_avg_loss)
+              {[rsi | acc], {new_avg_gain, new_avg_loss}}
+          end
+        end)
+
+      Enum.reverse(rsi_values)
+    end
+  end
+
+  defp find_first_rsi_index(changes, period) do
     changes
-    |> Stream.with_index()
-    |> Stream.map(fn {_change, index} ->
-      if index >= period do
-        period_changes = Enum.slice(changes, (index - period + 1)..index)
-
-        gains = period_changes |> Enum.filter(&(&1 && &1 > 0)) |> Enum.sum()
-        losses = period_changes |> Enum.filter(&(&1 && &1 < 0)) |> Enum.map(&abs/1) |> Enum.sum()
-
-        avg_gain = gains / period
-        avg_loss = losses / period
-
-        if avg_loss == 0 do
-          100.0
-        else
-          rs = avg_gain / avg_loss
-          100.0 - 100.0 / (1.0 + rs)
-        end
+    |> Enum.with_index()
+    |> Enum.find_value(-1, fn {_change, index} ->
+      if index >= period and has_sufficient_data(changes, index, period) do
+        index
       else
         nil
       end
     end)
-    |> Enum.to_list()
+  end
+
+  defp has_sufficient_data(changes, index, period) do
+    period_changes = Enum.slice(changes, (index - period + 1)..index)
+    Enum.count(period_changes, &(&1 != nil)) == period
+  end
+
+  defp calculate_rsi_from_averages(avg_gain, avg_loss) do
+    cond do
+      avg_loss == 0 and avg_gain == 0 ->
+        50.0
+
+      avg_loss == 0 ->
+        100.0
+
+      true ->
+        rs = avg_gain / avg_loss
+        100.0 - 100.0 / (1.0 + rs)
+    end
   end
 
   @doc """
@@ -410,16 +466,31 @@ defmodule ExPostFacto.Indicators do
   """
   @spec crossover?([number() | nil], [number() | nil]) :: boolean()
   def crossover?(series1, series2) when is_list(series1) and is_list(series2) do
-    case {series1, series2} do
-      {[current1, prev1 | _], [current2, prev2 | _]}
-      when not is_nil(current1) and not is_nil(prev1) and
-             not is_nil(current2) and not is_nil(prev2) ->
-        # Previous: series1 <= series2, Current: series1 > series2
-        prev1 <= prev2 and current1 > current2
-
-      _ ->
+    case {List.last(series1), List.last(series2)} do
+      {nil, _} ->
         false
+
+      {_, nil} ->
+        false
+
+      {current1, current2} when current1 <= current2 ->
+        false
+
+      {current1, current2} when current1 > current2 ->
+        # Current state: series1 > series2, check if there was a crossover
+        check_for_crossover(series1, series2)
     end
+  end
+
+  defp check_for_crossover(series1, series2) do
+    series1
+    |> Enum.zip(series2)
+    |> Enum.chunk_every(2, 1, :discard)
+    |> Enum.any?(fn [{prev1, prev2}, {curr1, curr2}] ->
+      not is_nil(prev1) and not is_nil(prev2) and
+        not is_nil(curr1) and not is_nil(curr2) and
+        prev1 <= prev2 and curr1 > curr2
+    end)
   end
 
   @doc """
@@ -441,15 +512,30 @@ defmodule ExPostFacto.Indicators do
   """
   @spec crossunder?([number() | nil], [number() | nil]) :: boolean()
   def crossunder?(series1, series2) when is_list(series1) and is_list(series2) do
-    case {series1, series2} do
-      {[current1, prev1 | _], [current2, prev2 | _]}
-      when not is_nil(current1) and not is_nil(prev1) and
-             not is_nil(current2) and not is_nil(prev2) ->
-        # Previous: series1 >= series2, Current: series1 < series2
-        prev1 >= prev2 and current1 < current2
-
-      _ ->
+    case {List.last(series1), List.last(series2)} do
+      {nil, _} ->
         false
+
+      {_, nil} ->
+        false
+
+      {current1, current2} when current1 >= current2 ->
+        false
+
+      {current1, current2} when current1 < current2 ->
+        # Current state: series1 < series2, check if there was a crossunder
+        check_for_crossunder(series1, series2)
     end
+  end
+
+  defp check_for_crossunder(series1, series2) do
+    series1
+    |> Enum.zip(series2)
+    |> Enum.chunk_every(2, 1, :discard)
+    |> Enum.any?(fn [{prev1, prev2}, {curr1, curr2}] ->
+      not is_nil(prev1) and not is_nil(prev2) and
+        not is_nil(curr1) and not is_nil(curr2) and
+        prev1 >= prev2 and curr1 < curr2
+    end)
   end
 end
