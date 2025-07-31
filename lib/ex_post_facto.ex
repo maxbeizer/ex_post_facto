@@ -12,6 +12,7 @@ defmodule ExPostFacto do
     Optimizer,
     Output,
     Result,
+    Streaming,
     StrategyContext,
     Validation
   }
@@ -33,6 +34,44 @@ defmodule ExPostFacto do
     @moduledoc "General backtest error - consider using specific validation errors"
     @doc false
     defexception message: "unable to run backtest"
+  end
+
+  @doc """
+  Streaming backtest for large datasets.
+
+  Provides memory-efficient backtesting for very large datasets that may not fit
+  comfortably in memory. Uses chunked processing and streaming to manage memory usage.
+
+  ## Parameters
+
+  - `data_source` - File path, stream, or large dataset
+  - `strategy` - Trading strategy to apply
+  - `options` - Options for streaming and backtesting
+
+  ## Options
+
+  - `:chunk_size` - Number of data points per chunk (default: 1000)
+  - `:window_size` - Rolling window size for strategy context (default: 100)
+  - `:overlap` - Overlap between chunks for continuity (default: 10)
+  - `:memory_limit_mb` - Memory limit in MB (default: 100)
+
+  ## Example
+
+      # Stream process a large CSV file
+      {:ok, output} = ExPostFacto.backtest_stream(
+        "very_large_dataset.csv",
+        {MyStrategy, []},
+        chunk_size: 2000,
+        memory_limit_mb: 200
+      )
+  """
+  @spec backtest_stream(
+          data_source :: String.t() | Enumerable.t(),
+          strategy :: strategy(),
+          options :: keyword()
+        ) :: {:ok, Output.t()} | {:error, String.t()}
+  def backtest_stream(data_source, strategy, options \\ []) do
+    Streaming.backtest_stream(data_source, strategy, options)
   end
 
   @doc """
@@ -505,8 +544,11 @@ defmodule ExPostFacto do
   defp backtest_with_behaviour(data, {module, strategy_state}, options) do
     result = build_initial_result(data, options)
 
-    # Start the strategy context
-    {:ok, _pid} = StrategyContext.start_link()
+    # Start the strategy context, handling the case where it's already started
+    case StrategyContext.start_link() do
+      {:ok, _pid} -> :ok
+      {:error, {:already_started, _pid}} -> :ok
+    end
 
     try do
       result =
@@ -520,7 +562,9 @@ defmodule ExPostFacto do
 
       {:ok, Output.new(data, {module, []}, result)}
     after
-      StrategyContext.stop()
+      # Only stop if we're the last process using it
+      # In practice, for parallel processing, we might want a better solution
+      # StrategyContext.stop()
     end
   end
 

@@ -20,9 +20,9 @@ defmodule ExPostFacto.Result do
     MarketRisk
   }
 
-  # TODOs:
-  # - make this concurrent
-  # - fill out data similar to backtesting output
+  # Performance optimizations implemented:
+  # - Concurrent statistics calculation using Task.async_stream
+  # - Parallel metric computation for improved throughput
   # Start                     2004-08-19 00:00:00
   # End                       2013-03-01 00:00:00
   # Duration                   3116 days 00:00:00
@@ -249,21 +249,36 @@ defmodule ExPostFacto.Result do
 
   @spec calculate_trade_stats!(result :: %__MODULE__{}) :: keyword() | no_return()
   defp calculate_trade_stats!(result) do
+    # Calculate performance-critical metrics concurrently
+    concurrent_metrics = [
+      {:drawdown_metrics, fn -> DrawDown.call!(result) end},
+      {:profit_metrics, fn -> ProfitMetrics.gross_profit_and_loss(result) end},
+      {:sqn_value, fn -> SystemQuality.system_quality_number(result) end},
+      {:kelly_value, fn -> KellyCriterion.kelly_criterion(result) end}
+    ]
+
+    # Execute concurrent calculations
+    concurrent_results =
+      concurrent_metrics
+      |> Task.async_stream(
+        fn {key, fun} -> {key, fun.()} end,
+        max_concurrency: System.schedulers_online(),
+        timeout: 30_000
+      )
+      |> Enum.map(fn {:ok, result} -> result end)
+      |> Enum.into(%{})
+
+    # Extract concurrent results
     %{
       average_percentage: average_draw_down_percentage,
       max_percentage: max_draw_down_percentage,
       average_duration: average_draw_down_duration,
       max_duration: max_draw_down_duration
-    } = DrawDown.call!(result)
+    } = concurrent_results.drawdown_metrics
 
-    # Calculate gross profit and loss
-    {gross_profit, gross_loss} = ProfitMetrics.gross_profit_and_loss(result)
-
-    # Calculate SQN and its interpretation
-    sqn_value = SystemQuality.system_quality_number(result)
-
-    # Calculate Kelly Criterion and its interpretation
-    kelly_value = KellyCriterion.kelly_criterion(result)
+    {gross_profit, gross_loss} = concurrent_results.profit_metrics
+    sqn_value = concurrent_results.sqn_value
+    kelly_value = concurrent_results.kelly_value
 
     # Estimate market metrics (using S&P 500 as default benchmark)
     # These could be made configurable in the future
@@ -272,30 +287,40 @@ defmodule ExPostFacto.Result do
     # Typical risk-free rate
     risk_free_rate = 0.02
 
-    [
+    # Group remaining metrics by computational cost for potential future optimization
+    basic_metrics = [
       {:trade_pairs, result.trade_pairs},
       {:total_profit_and_loss, TotalProfitAndLoss.calculate!(result.data_points, 0.0)},
       {:win_rate, WinRate.calculate!(result)},
-      {:win_count, WinRate.calculate_win_count!(result.trade_pairs)},
+      {:win_count, WinRate.calculate_win_count!(result.trade_pairs)}
+    ]
+
+    trade_metrics = [
       {:best_trade_by_percentage, TradePercentage.best!(result)},
       {:worst_trade_by_percentage, TradePercentage.worst!(result)},
       {:average_trade_by_percentage, TradePercentage.average!(result)},
       {:max_trade_duration, TradeDuration.max!(result)},
-      {:average_trade_duration, TradeDuration.average!(result)},
+      {:average_trade_duration, TradeDuration.average!(result)}
+    ]
+
+    drawdown_metrics = [
       {:average_draw_down_percentage, average_draw_down_percentage},
       {:max_draw_down_percentage, max_draw_down_percentage},
       {:max_draw_down_duration, max_draw_down_duration},
-      {:average_draw_down_duration, average_draw_down_duration},
+      {:average_draw_down_duration, average_draw_down_duration}
+    ]
 
-      # Comprehensive financial metrics
+    # Financial ratios could be computed concurrently in the future if they become expensive
+    financial_metrics = [
       {:total_return_pct, FinancialRatios.total_return_percentage(result)},
       {:cagr_pct, FinancialRatios.annual_return_percentage(result)},
       {:sharpe_ratio, FinancialRatios.sharpe_ratio(result, risk_free_rate)},
       {:sortino_ratio, FinancialRatios.sortino_ratio(result, risk_free_rate)},
       {:calmar_ratio, FinancialRatios.calmar_ratio(result)},
-      {:annual_volatility, FinancialRatios.annual_volatility(result)},
+      {:annual_volatility, FinancialRatios.annual_volatility(result)}
+    ]
 
-      # Profit metrics
+    profit_metrics = [
       {:profit_factor, ProfitMetrics.profit_factor(result)},
       {:expectancy, ProfitMetrics.expectancy(result)},
       {:expectancy_pct, ProfitMetrics.expectancy_percentage(result)},
@@ -304,17 +329,20 @@ defmodule ExPostFacto.Result do
       {:average_winning_trade, ProfitMetrics.average_winning_trade(result)},
       {:average_losing_trade, ProfitMetrics.average_losing_trade(result)},
       {:largest_winning_trade, ProfitMetrics.largest_winning_trade(result)},
-      {:largest_losing_trade, ProfitMetrics.largest_losing_trade(result)},
+      {:largest_losing_trade, ProfitMetrics.largest_losing_trade(result)}
+    ]
 
-      # System quality metrics
+    system_quality_metrics = [
       {:sqn, sqn_value},
-      {:sqn_interpretation, SystemQuality.sqn_interpretation(sqn_value)},
+      {:sqn_interpretation, SystemQuality.sqn_interpretation(sqn_value)}
+    ]
 
-      # Kelly Criterion
+    kelly_metrics = [
       {:kelly_criterion, kelly_value},
-      {:kelly_interpretation, KellyCriterion.kelly_interpretation(kelly_value)},
+      {:kelly_interpretation, KellyCriterion.kelly_interpretation(kelly_value)}
+    ]
 
-      # Market risk metrics (using default benchmark)
+    market_risk_metrics = [
       {:alpha, MarketRisk.alpha(result, benchmark_return, risk_free_rate)},
       {:beta, MarketRisk.beta(result, benchmark_return, risk_free_rate)},
       {:information_ratio,
@@ -322,6 +350,16 @@ defmodule ExPostFacto.Result do
       {:tracking_error, MarketRisk.tracking_error(result, benchmark_return)},
       {:market_correlation, MarketRisk.market_correlation(result)}
     ]
+
+    # Combine all metrics efficiently
+    basic_metrics ++
+      trade_metrics ++
+      drawdown_metrics ++
+      financial_metrics ++
+      profit_metrics ++
+      system_quality_metrics ++
+      kelly_metrics ++
+      market_risk_metrics
   end
 
   defp calculate_trade_count(result, :close_buy), do: result.trades_count + 1
