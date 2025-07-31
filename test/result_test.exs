@@ -106,12 +106,14 @@ defmodule ExPostFactoResultTest do
       %Result{data_points: [], is_position_open: false, starting_balance: 0.0}
       |> Result.compile()
 
-    assert %Result{
-             data_points: [],
-             is_position_open: false,
-             starting_balance: 0.0,
-             total_profit_and_loss: 0.0
-           } == result
+    assert result.data_points == []
+    assert result.is_position_open == false
+    assert result.starting_balance == 0.0
+    assert result.total_profit_and_loss == 0.0
+    # Comprehensive stats should be calculated
+    assert is_float(result.total_return_pct)
+    assert is_binary(result.sqn_interpretation)
+    assert is_binary(result.kelly_interpretation)
   end
 
   test "compile/2 calculates total profit when data points exist with buy" do

@@ -96,6 +96,7 @@ When contributing to this project:
 8. **Add type specs** for all public functions
 9. **Consider performance implications** for large datasets
 10. **Test with real market data** when possible
+11. **Fix compiler warnings** there should be no warnings when possible
 
 ## Code Examples
 

@@ -12,7 +12,12 @@ defmodule ExPostFacto.Result do
     TradePercentage,
     CompilePairs,
     TotalProfitAndLoss,
-    WinRate
+    WinRate,
+    FinancialRatios,
+    ProfitMetrics,
+    SystemQuality,
+    KellyCriterion,
+    MarketRisk
   }
 
   # TODOs:
@@ -67,7 +72,32 @@ defmodule ExPostFacto.Result do
             worst_trade_by_percentage: 0.0,
             average_trade_by_percentage: 0.0,
             max_trade_duration: 0.0,
-            average_trade_duration: 0.0
+            average_trade_duration: 0.0,
+            # Comprehensive statistics
+            total_return_pct: 0.0,
+            cagr_pct: 0.0,
+            sharpe_ratio: 0.0,
+            sortino_ratio: 0.0,
+            calmar_ratio: 0.0,
+            profit_factor: 0.0,
+            expectancy: 0.0,
+            expectancy_pct: 0.0,
+            sqn: 0.0,
+            sqn_interpretation: "",
+            kelly_criterion: 0.0,
+            kelly_interpretation: "",
+            annual_volatility: 0.0,
+            alpha: 0.0,
+            beta: 0.0,
+            information_ratio: 0.0,
+            tracking_error: 0.0,
+            market_correlation: 0.0,
+            gross_profit: 0.0,
+            gross_loss: 0.0,
+            average_winning_trade: 0.0,
+            average_losing_trade: 0.0,
+            largest_winning_trade: 0.0,
+            largest_losing_trade: 0.0
 
   @doc """
   Creates a new result struct.
@@ -135,6 +165,75 @@ defmodule ExPostFacto.Result do
     Enum.into(trade_stats, result)
   end
 
+  @doc """
+  Returns a comprehensive summary of all statistics as a map.
+
+  This provides a clean view of all calculated metrics without the internal
+  data structures like data_points and trade_pairs.
+  """
+  @spec comprehensive_summary(result :: %__MODULE__{}) :: map()
+  def comprehensive_summary(result) do
+    %{
+      # Basic metrics
+      starting_balance: result.starting_balance,
+      final_balance: result.starting_balance + result.total_profit_and_loss,
+      total_profit_and_loss: result.total_profit_and_loss,
+      total_return_pct: result.total_return_pct,
+      duration_days: result.duration,
+      trades_count: result.trades_count,
+
+      # Return metrics
+      cagr_pct: result.cagr_pct,
+
+      # Risk metrics
+      sharpe_ratio: result.sharpe_ratio,
+      sortino_ratio: result.sortino_ratio,
+      calmar_ratio: result.calmar_ratio,
+      annual_volatility: result.annual_volatility,
+      max_drawdown_pct: result.max_draw_down_percentage,
+      max_drawdown_duration_days: result.max_draw_down_duration,
+      average_drawdown_pct: result.average_draw_down_percentage,
+      average_drawdown_duration_days: result.average_draw_down_duration,
+
+      # Trading metrics
+      win_rate: result.win_rate,
+      win_count: result.win_count,
+      profit_factor: result.profit_factor,
+      expectancy: result.expectancy,
+      expectancy_pct: result.expectancy_pct,
+
+      # Trade analysis
+      best_trade_pct: result.best_trade_by_percentage,
+      worst_trade_pct: result.worst_trade_by_percentage,
+      average_trade_pct: result.average_trade_by_percentage,
+      max_trade_duration_days: result.max_trade_duration,
+      average_trade_duration_days: result.average_trade_duration,
+
+      # Profit/Loss breakdown
+      gross_profit: result.gross_profit,
+      gross_loss: result.gross_loss,
+      average_winning_trade: result.average_winning_trade,
+      average_losing_trade: result.average_losing_trade,
+      largest_winning_trade: result.largest_winning_trade,
+      largest_losing_trade: result.largest_losing_trade,
+
+      # System quality
+      sqn: result.sqn,
+      sqn_interpretation: result.sqn_interpretation,
+
+      # Position sizing
+      kelly_criterion: result.kelly_criterion,
+      kelly_interpretation: result.kelly_interpretation,
+
+      # Market risk
+      alpha: result.alpha,
+      beta: result.beta,
+      information_ratio: result.information_ratio,
+      tracking_error: result.tracking_error,
+      market_correlation: result.market_correlation
+    }
+  end
+
   @spec add_data_point?(result :: %__MODULE__{}, action :: ExPostFacto.action()) :: boolean()
   defp add_data_point?(%{is_position_open: true}, :close_buy), do: true
   defp add_data_point?(%{is_position_open: true}, :close_sell), do: true
@@ -157,6 +256,20 @@ defmodule ExPostFacto.Result do
       max_duration: max_draw_down_duration
     } = DrawDown.call!(result)
 
+    # Calculate gross profit and loss
+    {gross_profit, gross_loss} = ProfitMetrics.gross_profit_and_loss(result)
+
+    # Calculate SQN and its interpretation
+    sqn_value = SystemQuality.system_quality_number(result)
+
+    # Calculate Kelly Criterion and its interpretation
+    kelly_value = KellyCriterion.kelly_criterion(result)
+
+    # Estimate market metrics (using S&P 500 as default benchmark)
+    # These could be made configurable in the future
+    benchmark_return = 10.0  # Typical S&P 500 annual return
+    risk_free_rate = 0.02    # Typical risk-free rate
+
     [
       {:trade_pairs, result.trade_pairs},
       {:total_profit_and_loss, TotalProfitAndLoss.calculate!(result.data_points, 0.0)},
@@ -170,7 +283,41 @@ defmodule ExPostFacto.Result do
       {:average_draw_down_percentage, average_draw_down_percentage},
       {:max_draw_down_percentage, max_draw_down_percentage},
       {:max_draw_down_duration, max_draw_down_duration},
-      {:average_draw_down_duration, average_draw_down_duration}
+      {:average_draw_down_duration, average_draw_down_duration},
+
+      # Comprehensive financial metrics
+      {:total_return_pct, FinancialRatios.total_return_percentage(result)},
+      {:cagr_pct, FinancialRatios.annual_return_percentage(result)},
+      {:sharpe_ratio, FinancialRatios.sharpe_ratio(result, risk_free_rate)},
+      {:sortino_ratio, FinancialRatios.sortino_ratio(result, risk_free_rate)},
+      {:calmar_ratio, FinancialRatios.calmar_ratio(result)},
+      {:annual_volatility, FinancialRatios.annual_volatility(result)},
+
+      # Profit metrics
+      {:profit_factor, ProfitMetrics.profit_factor(result)},
+      {:expectancy, ProfitMetrics.expectancy(result)},
+      {:expectancy_pct, ProfitMetrics.expectancy_percentage(result)},
+      {:gross_profit, gross_profit},
+      {:gross_loss, gross_loss},
+      {:average_winning_trade, ProfitMetrics.average_winning_trade(result)},
+      {:average_losing_trade, ProfitMetrics.average_losing_trade(result)},
+      {:largest_winning_trade, ProfitMetrics.largest_winning_trade(result)},
+      {:largest_losing_trade, ProfitMetrics.largest_losing_trade(result)},
+
+      # System quality metrics
+      {:sqn, sqn_value},
+      {:sqn_interpretation, SystemQuality.sqn_interpretation(sqn_value)},
+
+      # Kelly Criterion
+      {:kelly_criterion, kelly_value},
+      {:kelly_interpretation, KellyCriterion.kelly_interpretation(kelly_value)},
+
+      # Market risk metrics (using default benchmark)
+      {:alpha, MarketRisk.alpha(result, benchmark_return, risk_free_rate)},
+      {:beta, MarketRisk.beta(result, benchmark_return, risk_free_rate)},
+      {:information_ratio, MarketRisk.information_ratio(result, benchmark_return, risk_free_rate)},
+      {:tracking_error, MarketRisk.tracking_error(result, benchmark_return)},
+      {:market_correlation, MarketRisk.market_correlation(result)}
     ]
   end
 
