@@ -91,7 +91,7 @@ defmodule ExPostFacto.InputData do
 
   @doc """
   Normalizes timestamp to a consistent format.
-  
+
   Attempts to parse string timestamps into DateTime structs for better handling.
   """
   @spec normalize_timestamp(String.t() | DateTime.t() | nil) :: DateTime.t() | String.t() | nil
@@ -112,7 +112,7 @@ defmodule ExPostFacto.InputData do
       # ISO 8601 formats
       &DateTime.from_iso8601/1,
       # Date only formats
-      fn str -> 
+      fn str ->
         case Date.from_iso8601(str) do
           {:ok, date} -> {:ok, DateTime.new!(date, ~T[00:00:00])}
           error -> error

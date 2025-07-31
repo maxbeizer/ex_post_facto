@@ -76,38 +76,26 @@ defmodule ExPostFactoTest do
   end
 
   test "backtest/3 collects data points from the applied strategy" do
-    example_data = [%{high: 1.0, low: 0.0, open: 0.25, close: 0.75}]
     mfa = {BuyBuyBuy, :call, []}
 
     example_data = [
-      build_candle(open: 0.75),
-      build_candle(open: 0.75)
+      build_candle(open: 0.75, timestamp: "2023-01-01"),
+      build_candle(open: 0.80, timestamp: "2023-01-02")
     ]
 
     {:ok, %{result: result}} = ExPostFacto.backtest(example_data, mfa, validate_data: false)
 
+    # With 2 data points, MFA strategy gets called once with data from index 0,
+    # and creates a data point at index 1 (using the second data point)
     expected_data_points = [
       %DataPoint{
         datum: %InputData{
           high: 1.0,
-          low: 1.0,
-          open: 0.75,
+          low: 0.80,
+          open: 0.80,
           close: 1.0,
           volume: nil,
-          timestamp: "",
-          other: nil
-        },
-        action: :buy,
-        index: 0
-      },
-      %DataPoint{
-        datum: %InputData{
-          high: 1.0,
-          low: 1.0,
-          open: 0.75,
-          close: 1.0,
-          volume: nil,
-          timestamp: "",
+          timestamp: ~U[2023-01-02 00:00:00Z],
           other: nil
         },
         action: :buy,
