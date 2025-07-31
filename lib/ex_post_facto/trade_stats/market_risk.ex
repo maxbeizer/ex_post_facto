@@ -28,14 +28,17 @@ defmodule ExPostFacto.TradeStats.MarketRisk do
   ## Returns
   Float representing alpha as a percentage
   """
-  @spec alpha(result :: %Result{}, benchmark_return :: float(), risk_free_rate :: float()) :: float()
+  @spec alpha(result :: %Result{}, benchmark_return :: float(), risk_free_rate :: float()) ::
+          float()
   def alpha(result, benchmark_return, risk_free_rate \\ 0.02) do
-    strategy_return = annual_return(result) / 100  # Convert to decimal
+    # Convert to decimal
+    strategy_return = annual_return(result) / 100
     beta_value = beta(result, benchmark_return, risk_free_rate)
 
     expected_return = risk_free_rate + beta_value * (benchmark_return / 100 - risk_free_rate)
 
-    (strategy_return - expected_return) * 100  # Convert back to percentage
+    # Convert back to percentage
+    (strategy_return - expected_return) * 100
   end
 
   @doc """
@@ -54,7 +57,8 @@ defmodule ExPostFacto.TradeStats.MarketRisk do
   - Beta > 1.0: More volatile than market
   - Beta < 1.0: Less volatile than market
   """
-  @spec beta(result :: %Result{}, benchmark_return :: float(), risk_free_rate :: float()) :: float()
+  @spec beta(result :: %Result{}, benchmark_return :: float(), risk_free_rate :: float()) ::
+          float()
   def beta(result, _benchmark_return, _risk_free_rate \\ 0.02) do
     # Simplified beta calculation when we don't have time-series benchmark data
     # In practice, you'd need daily/periodic returns for both strategy and benchmark
@@ -66,13 +70,17 @@ defmodule ExPostFacto.TradeStats.MarketRisk do
     estimated_market_volatility = 18.0
 
     cond do
-      strategy_volatility == 0.0 -> 0.0
-      estimated_market_volatility == 0.0 -> 0.0
+      strategy_volatility == 0.0 ->
+        0.0
+
+      estimated_market_volatility == 0.0 ->
+        0.0
+
       true ->
         # Simplified calculation: assume some correlation with market
         # This would be more accurate with actual time-series data
         correlation = estimate_market_correlation(result)
-        (correlation * strategy_volatility) / estimated_market_volatility
+        correlation * strategy_volatility / estimated_market_volatility
     end
   end
 
@@ -129,7 +137,11 @@ defmodule ExPostFacto.TradeStats.MarketRisk do
   ## Returns
   Float representing information ratio
   """
-  @spec information_ratio(result :: %Result{}, benchmark_return :: float(), risk_free_rate :: float()) :: float()
+  @spec information_ratio(
+          result :: %Result{},
+          benchmark_return :: float(),
+          risk_free_rate :: float()
+        ) :: float()
   def information_ratio(result, benchmark_return, risk_free_rate \\ 0.02) do
     alpha_value = alpha(result, benchmark_return, risk_free_rate)
     tracking_error_value = tracking_error(result, benchmark_return)
@@ -166,10 +178,15 @@ defmodule ExPostFacto.TradeStats.MarketRisk do
     initial_value = result.starting_balance
 
     cond do
-      is_nil(result.duration) -> 0.0
-      result.duration == 0.0 -> 0.0
+      is_nil(result.duration) ->
+        0.0
+
+      result.duration == 0.0 ->
+        0.0
+
       true ->
         years = result.duration / 365.25
+
         if years == 0.0 do
           0.0
         else
@@ -184,16 +201,22 @@ defmodule ExPostFacto.TradeStats.MarketRisk do
     # For now, estimate based on trade variability
 
     case result.trades_count do
-      0 -> 0.0
-      count when count < 2 -> 0.0
+      0 ->
+        0.0
+
+      count when count < 2 ->
+        0.0
+
       _ ->
-        trade_returns = Enum.map(result.trade_pairs, fn trade_pair ->
-          if trade_pair.previous_balance == 0.0 do
-            0.0
-          else
-            (trade_pair.balance - trade_pair.previous_balance) / trade_pair.previous_balance * 100
-          end
-        end)
+        trade_returns =
+          Enum.map(result.trade_pairs, fn trade_pair ->
+            if trade_pair.previous_balance == 0.0 do
+              0.0
+            else
+              (trade_pair.balance - trade_pair.previous_balance) / trade_pair.previous_balance *
+                100
+            end
+          end)
 
         mean_return = Enum.sum(trade_returns) / length(trade_returns)
 
@@ -206,11 +229,12 @@ defmodule ExPostFacto.TradeStats.MarketRisk do
         volatility = :math.sqrt(variance)
 
         # Annualize (simplified)
-        trade_frequency = if result.duration == 0.0 or is_nil(result.duration) do
-          1.0
-        else
-          length(trade_returns) / (result.duration / 365.25)
-        end
+        trade_frequency =
+          if result.duration == 0.0 or is_nil(result.duration) do
+            1.0
+          else
+            length(trade_returns) / (result.duration / 365.25)
+          end
 
         volatility * :math.sqrt(trade_frequency)
     end
@@ -228,10 +252,14 @@ defmodule ExPostFacto.TradeStats.MarketRisk do
     strategy_volatility = annual_volatility(result)
 
     case strategy_volatility do
-      vol when vol < 10.0 -> 0.3   # Low volatility = likely market-neutral
-      vol when vol < 20.0 -> 0.6   # Moderate volatility = some market exposure
-      vol when vol < 30.0 -> 0.8   # High volatility = likely market-correlated
-      _ -> 0.9                     # Very high volatility = highly correlated
+      # Low volatility = likely market-neutral
+      vol when vol < 10.0 -> 0.3
+      # Moderate volatility = some market exposure
+      vol when vol < 20.0 -> 0.6
+      # High volatility = likely market-correlated
+      vol when vol < 30.0 -> 0.8
+      # Very high volatility = highly correlated
+      _ -> 0.9
     end
   end
 end

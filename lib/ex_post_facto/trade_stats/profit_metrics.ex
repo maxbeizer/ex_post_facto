@@ -48,11 +48,12 @@ defmodule ExPostFacto.TradeStats.ProfitMetrics do
   Expectancy % = (Expectancy / Starting Balance) * 100
   """
   @spec expectancy_percentage(result :: %Result{}) :: float()
-  def expectancy_percentage(%{starting_balance: starting_balance}) when starting_balance == 0.0, do: 0.0
+  def expectancy_percentage(%{starting_balance: starting_balance}) when starting_balance == 0.0,
+    do: 0.0
 
   def expectancy_percentage(result) do
     expectancy_value = expectancy(result)
-    (expectancy_value / result.starting_balance) * 100
+    expectancy_value / result.starting_balance * 100
   end
 
   @doc """

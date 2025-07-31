@@ -57,13 +57,15 @@ defmodule ExPostFactoTradeStatsKellyCriterionTest do
 
       result = %Result{
         trades_count: 3,
-        win_rate: 66.67,  # 2 out of 3 trades are winners
+        # 2 out of 3 trades are winners
+        win_rate: 66.67,
         trade_pairs: trade_pairs
       }
 
       kelly = KellyCriterion.kelly_criterion(result)
       assert is_float(kelly)
-      assert kelly > 0.0  # Should be positive for profitable strategy
+      # Should be positive for profitable strategy
+      assert kelly > 0.0
     end
 
     test "calculates Kelly criterion correctly for losing strategy" do
@@ -92,13 +94,15 @@ defmodule ExPostFactoTradeStatsKellyCriterionTest do
 
       result = %Result{
         trades_count: 3,
-        win_rate: 33.33,  # 1 out of 3 trades are winners
+        # 1 out of 3 trades are winners
+        win_rate: 33.33,
         trade_pairs: trade_pairs
       }
 
       kelly = KellyCriterion.kelly_criterion(result)
       assert is_float(kelly)
-      assert kelly < 0.0  # Should be negative for unprofitable strategy
+      # Should be negative for unprofitable strategy
+      assert kelly < 0.0
     end
   end
 
@@ -154,7 +158,8 @@ defmodule ExPostFactoTradeStatsKellyCriterionTest do
     end
 
     test "returns correct interpretation for very strong edge" do
-      assert "Very strong edge - potentially too aggressive" = KellyCriterion.kelly_interpretation(0.50)
+      assert "Very strong edge - potentially too aggressive" =
+               KellyCriterion.kelly_interpretation(0.50)
     end
   end
 
@@ -218,7 +223,8 @@ defmodule ExPostFactoTradeStatsKellyCriterionTest do
       assert is_float(geometric_mean)
       # Geometric mean should be positive for profitable trades
       assert geometric_mean > 0.0
-      assert geometric_mean < 15.0  # Should be less than arithmetic mean
+      # Should be less than arithmetic mean
+      assert geometric_mean < 15.0
     end
   end
 
@@ -246,7 +252,8 @@ defmodule ExPostFactoTradeStatsKellyCriterionTest do
       }
 
       risk = KellyCriterion.risk_of_ruin(result)
-      assert risk >= 0.0  # Should be low risk but not necessarily 0
+      # Should be low risk but not necessarily 0
+      assert risk >= 0.0
     end
 
     test "calculates risk of ruin for normal strategy" do

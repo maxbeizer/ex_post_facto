@@ -47,7 +47,7 @@ defmodule ExPostFacto.TradeStats.SystemQuality do
       if std_deviation == 0.0 do
         0.0
       else
-        (average_result / std_deviation) * :math.sqrt(count)
+        average_result / std_deviation * :math.sqrt(count)
       end
     end
   end
@@ -77,12 +77,13 @@ defmodule ExPostFacto.TradeStats.SystemQuality do
 
     # Simplified confidence calculation based on SQN and sample size
     # In practice, this would use more sophisticated statistical methods
-    base_confidence = case sqn do
-      sqn when sqn >= 2.0 -> 0.95
-      sqn when sqn >= 1.6 -> 0.80
-      sqn when sqn >= 1.0 -> 0.60
-      _ -> 0.30
-    end
+    base_confidence =
+      case sqn do
+        sqn when sqn >= 2.0 -> 0.95
+        sqn when sqn >= 1.6 -> 0.80
+        sqn when sqn >= 1.0 -> 0.60
+        _ -> 0.30
+      end
 
     # Adjust for sample size
     sample_adjustment = min(result.trades_count / 100, 1.0)

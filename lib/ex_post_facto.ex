@@ -193,7 +193,8 @@ defmodule ExPostFacto do
       end
   """
   @spec backtest_with_enhanced_validation([map()], strategy(), keyword()) ::
-          {:ok, Output.t()} | {:error, String.t() | Validation.ValidationError.t() | Validation.StrategyError.t()}
+          {:ok, Output.t()}
+          | {:error, String.t() | Validation.ValidationError.t() | Validation.StrategyError.t()}
   def backtest_with_enhanced_validation(data, strategy, options) do
     debug_mode = Keyword.get(options, :debug, false)
 
@@ -209,13 +210,14 @@ defmodule ExPostFacto do
          :ok <- handle_validation_result(data_validation_result, debug_mode),
          {:ok, processed_data} <- process_data_enhanced(data, options),
          {:ok, output} <- execute_backtest_enhanced(processed_data, strategy, validated_options) do
-
       # Check for runtime warnings
       warnings_enabled = Keyword.get(options, :warnings, true)
+
       case check_runtime_warnings(output.result, options) do
         {:warning, message} when warnings_enabled ->
           if debug_mode, do: IO.puts("[WARNING] #{message}")
           {:ok, output}
+
         _ ->
           {:ok, output}
       end
@@ -237,17 +239,20 @@ defmodule ExPostFacto do
   # Enhanced validation helper functions
 
   defp handle_validation_result(:ok, _debug_mode), do: :ok
+
   defp handle_validation_result({:warning, message}, debug_mode) do
     if debug_mode, do: IO.puts("[WARNING] #{message}")
     :ok
   end
+
   defp handle_validation_result({:error, error}, _debug_mode), do: {:error, error}
 
   defp validate_options_enhanced(options) do
     case Validation.validate_options(options) do
       :ok -> {:ok, options}
       {:error, error} -> {:error, error}
-      {:warning, _message} -> {:ok, options}  # Continue with warnings
+      # Continue with warnings
+      {:warning, _message} -> {:ok, options}
     end
   end
 
@@ -264,10 +269,12 @@ defmodule ExPostFacto do
     clean_enabled = Keyword.get(options, :clean_data, true)
     debug_mode = Keyword.get(options, :debug, false)
 
-    with {:ok, cleaned_data} <- maybe_clean_data(data, Keyword.put(options, :clean_data, clean_enabled)) do
+    with {:ok, cleaned_data} <-
+           maybe_clean_data(data, Keyword.put(options, :clean_data, clean_enabled)) do
       if debug_mode do
         cleaned_count = length(cleaned_data)
         original_count = length(data)
+
         if cleaned_count != original_count do
           IO.puts("[DEBUG] Data cleaning: #{original_count} -> #{cleaned_count} data points")
         end
@@ -276,10 +283,11 @@ defmodule ExPostFacto do
       {:ok, cleaned_data}
     else
       {:error, reason} ->
-        {:error, Validation.ValidationError.exception(
-          message: "Data processing failed: #{reason}",
-          context: %{data_count: length(data), clean_enabled: clean_enabled}
-        )}
+        {:error,
+         Validation.ValidationError.exception(
+           message: "Data processing failed: #{reason}",
+           context: %{data_count: length(data), clean_enabled: clean_enabled}
+         )}
     end
   end
 
@@ -292,13 +300,18 @@ defmodule ExPostFacto do
 
     # Use the legacy backtest logic but with enhanced error formatting
     case backtest_legacy(data, strategy, options) do
-      {:ok, output} -> {:ok, output}
+      {:ok, output} ->
+        {:ok, output}
+
       {:error, reason} when is_binary(reason) ->
-        {:error, Validation.ValidationError.exception(
-          message: "Backtest execution failed: #{reason}",
-          context: %{strategy: strategy, data_count: length(data)}
-        )}
-      {:error, error} -> {:error, error}
+        {:error,
+         Validation.ValidationError.exception(
+           message: "Backtest execution failed: #{reason}",
+           context: %{strategy: strategy, data_count: length(data)}
+         )}
+
+      {:error, error} ->
+        {:error, error}
     end
   end
 
@@ -307,7 +320,9 @@ defmodule ExPostFacto do
 
     cond do
       result.trades_count == 0 ->
-        warning = "No trades were executed - strategy may be too conservative or data insufficient"
+        warning =
+          "No trades were executed - strategy may be too conservative or data insufficient"
+
         if debug_mode, do: IO.puts("[WARNING] #{warning}")
         {:warning, warning}
 
@@ -317,11 +332,14 @@ defmodule ExPostFacto do
         {:warning, warning}
 
       result.max_draw_down_percentage > 50.0 ->
-        warning = "High maximum drawdown of #{Float.round(result.max_draw_down_percentage, 2)}% detected"
+        warning =
+          "High maximum drawdown of #{Float.round(result.max_draw_down_percentage, 2)}% detected"
+
         if debug_mode, do: IO.puts("[WARNING] #{warning}")
         {:warning, warning}
 
-      true -> :ok
+      true ->
+        :ok
     end
   end
 

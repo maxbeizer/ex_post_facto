@@ -100,10 +100,11 @@ defmodule ExPostFacto.TradeStats.FinancialRatios do
   Total Return = ((Final Value - Initial Value) / Initial Value) * 100
   """
   @spec total_return_percentage(result :: %Result{}) :: float()
-  def total_return_percentage(%{starting_balance: starting_balance}) when starting_balance == 0.0, do: 0.0
+  def total_return_percentage(%{starting_balance: starting_balance}) when starting_balance == 0.0,
+    do: 0.0
 
   def total_return_percentage(result) do
-    (result.total_profit_and_loss / result.starting_balance) * 100
+    result.total_profit_and_loss / result.starting_balance * 100
   end
 
   @doc """
@@ -114,8 +115,12 @@ defmodule ExPostFacto.TradeStats.FinancialRatios do
     trade_returns = get_trade_return_percentages(result)
 
     case length(trade_returns) do
-      0 -> 0.0
-      1 -> 0.0
+      0 ->
+        0.0
+
+      1 ->
+        0.0
+
       _ ->
         mean_return = Enum.sum(trade_returns) / length(trade_returns)
 
@@ -130,11 +135,12 @@ defmodule ExPostFacto.TradeStats.FinancialRatios do
         # Annualize assuming trades represent periods (adjust factor as needed)
         # This is a simplified calculation - in practice you'd need more sophisticated
         # time-series analysis
-        trade_frequency = if result.duration == 0.0 or is_nil(result.duration) do
-          1.0
-        else
-          length(trade_returns) / (result.duration / 365.25)
-        end
+        trade_frequency =
+          if result.duration == 0.0 or is_nil(result.duration) do
+            1.0
+          else
+            length(trade_returns) / (result.duration / 365.25)
+          end
 
         volatility * :math.sqrt(trade_frequency)
     end
@@ -149,8 +155,12 @@ defmodule ExPostFacto.TradeStats.FinancialRatios do
     negative_returns = Enum.filter(trade_returns, fn return -> return < 0 end)
 
     case length(negative_returns) do
-      0 -> 0.0
-      1 -> 0.0
+      0 ->
+        0.0
+
+      1 ->
+        0.0
+
       _ ->
         mean_negative = Enum.sum(negative_returns) / length(negative_returns)
 
@@ -163,11 +173,12 @@ defmodule ExPostFacto.TradeStats.FinancialRatios do
         volatility = :math.sqrt(variance)
 
         # Annualize
-        trade_frequency = if result.duration == 0.0 or is_nil(result.duration) do
-          1.0
-        else
-          length(trade_returns) / (result.duration / 365.25)
-        end
+        trade_frequency =
+          if result.duration == 0.0 or is_nil(result.duration) do
+            1.0
+          else
+            length(trade_returns) / (result.duration / 365.25)
+          end
 
         volatility * :math.sqrt(trade_frequency)
     end

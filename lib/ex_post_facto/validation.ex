@@ -101,8 +101,12 @@ defmodule ExPostFacto.Validation do
   @spec validate_data_enhanced([map()], keyword()) ::
           :ok | {:error, ValidationError.t()} | {:warning, String.t()}
   def validate_data_enhanced(data, options \\ [])
-  def validate_data_enhanced([], _options), do: {:error, ValidationError.exception("Data cannot be empty")}
-  def validate_data_enhanced(nil, _options), do: {:error, ValidationError.exception("Data cannot be nil")}
+
+  def validate_data_enhanced([], _options),
+    do: {:error, ValidationError.exception("Data cannot be empty")}
+
+  def validate_data_enhanced(nil, _options),
+    do: {:error, ValidationError.exception("Data cannot be nil")}
 
   def validate_data_enhanced(data, options) when is_list(data) do
     debug_mode = Keyword.get(options, :debug, false)
@@ -110,7 +114,9 @@ defmodule ExPostFacto.Validation do
     context = Keyword.get(options, :context, %{})
 
     if debug_mode do
-      IO.puts("[DEBUG] Validating #{length(data)} data points in #{if strict_mode, do: "strict", else: "normal"} mode")
+      IO.puts(
+        "[DEBUG] Validating #{length(data)} data points in #{if strict_mode, do: "strict", else: "normal"} mode"
+      )
     end
 
     # Check for common issues first
@@ -173,18 +179,22 @@ defmodule ExPostFacto.Validation do
   def validate_strategy(strategy, options \\ [])
 
   def validate_strategy(nil, _options) do
-    {:error, StrategyError.exception(
-      message: "Strategy cannot be nil",
-      suggestions: ["Provide a valid strategy tuple {Module, :function, args} or {Module, opts}"]
-    )}
+    {:error,
+     StrategyError.exception(
+       message: "Strategy cannot be nil",
+       suggestions: ["Provide a valid strategy tuple {Module, :function, args} or {Module, opts}"]
+     )}
   end
 
   # Validate MFA tuple strategy
-  def validate_strategy({module, function, args}, options) when is_atom(module) and is_atom(function) and is_list(args) do
+  def validate_strategy({module, function, args}, options)
+      when is_atom(module) and is_atom(function) and is_list(args) do
     debug_mode = Keyword.get(options, :debug, false)
 
     if debug_mode do
-      IO.puts("[DEBUG] Validating MFA strategy: #{inspect(module)}.#{function}/#{length(args) + 2}")
+      IO.puts(
+        "[DEBUG] Validating MFA strategy: #{inspect(module)}.#{function}/#{length(args) + 2}"
+      )
     end
 
     with :ok <- validate_module_exists(module),
@@ -193,11 +203,12 @@ defmodule ExPostFacto.Validation do
       check_strategy_warnings({module, function, args}, options)
     else
       {:error, reason} ->
-        {:error, StrategyError.exception(
-          message: reason,
-          strategy: {module, function, args},
-          suggestions: get_mfa_strategy_suggestions(module, function, args)
-        )}
+        {:error,
+         StrategyError.exception(
+           message: reason,
+           strategy: {module, function, args},
+           suggestions: get_mfa_strategy_suggestions(module, function, args)
+         )}
     end
   end
 
@@ -206,7 +217,9 @@ defmodule ExPostFacto.Validation do
     debug_mode = Keyword.get(options, :debug, false)
 
     if debug_mode do
-      IO.puts("[DEBUG] Validating Strategy behaviour: #{inspect(module)} with options #{inspect(opts)}")
+      IO.puts(
+        "[DEBUG] Validating Strategy behaviour: #{inspect(module)} with options #{inspect(opts)}"
+      )
     end
 
     with :ok <- validate_module_exists(module),
@@ -215,24 +228,26 @@ defmodule ExPostFacto.Validation do
       check_strategy_warnings({module, opts}, options)
     else
       {:error, reason} ->
-        {:error, StrategyError.exception(
-          message: reason,
-          strategy: {module, opts},
-          suggestions: get_behaviour_strategy_suggestions(module, opts)
-        )}
+        {:error,
+         StrategyError.exception(
+           message: reason,
+           strategy: {module, opts},
+           suggestions: get_behaviour_strategy_suggestions(module, opts)
+         )}
     end
   end
 
   def validate_strategy(strategy, _options) do
-    {:error, StrategyError.exception(
-      message: "Invalid strategy format: #{inspect(strategy)}",
-      strategy: strategy,
-      suggestions: [
-        "Use MFA tuple format: {Module, :function, args}",
-        "Use Strategy behaviour format: {Module, opts}",
-        "Ensure all elements are properly typed"
-      ]
-    )}
+    {:error,
+     StrategyError.exception(
+       message: "Invalid strategy format: #{inspect(strategy)}",
+       strategy: strategy,
+       suggestions: [
+         "Use MFA tuple format: {Module, :function, args}",
+         "Use Strategy behaviour format: {Module, opts}",
+         "Ensure all elements are properly typed"
+       ]
+     )}
   end
 
   @doc """
@@ -325,24 +340,32 @@ defmodule ExPostFacto.Validation do
 
     cond do
       size == 0 ->
-        {:error, ValidationError.exception(
-          message: "Data cannot be empty",
-          suggestions: ["Provide at least one data point", "Check data loading logic"]
-        )}
+        {:error,
+         ValidationError.exception(
+           message: "Data cannot be empty",
+           suggestions: ["Provide at least one data point", "Check data loading logic"]
+         )}
 
       size < 10 ->
         if debug_mode do
-          IO.puts("[DEBUG] Warning: Very small dataset (#{size} points) - results may not be reliable")
+          IO.puts(
+            "[DEBUG] Warning: Very small dataset (#{size} points) - results may not be reliable"
+          )
         end
+
         :ok
 
       size > 100_000 ->
         if debug_mode do
-          IO.puts("[DEBUG] Warning: Large dataset (#{size} points) - consider performance implications")
+          IO.puts(
+            "[DEBUG] Warning: Large dataset (#{size} points) - consider performance implications"
+          )
         end
+
         :ok
 
-      true -> :ok
+      true ->
+        :ok
     end
   end
 
@@ -352,7 +375,9 @@ defmodule ExPostFacto.Validation do
     duplicate_ratio = (length(data) - unique_count) / length(data)
 
     if duplicate_ratio > 0.1 and debug_mode do
-      IO.puts("[DEBUG] Warning: High duplicate ratio (#{Float.round(duplicate_ratio * 100, 1)}%) detected")
+      IO.puts(
+        "[DEBUG] Warning: High duplicate ratio (#{Float.round(duplicate_ratio * 100, 1)}%) detected"
+      )
     end
 
     :ok
@@ -379,15 +404,20 @@ defmodule ExPostFacto.Validation do
           if debug_mode and rem(index, 1000) == 0 do
             IO.puts("[DEBUG] Validated #{index + 1} data points...")
           end
+
           :ok
         end
 
       _ ->
-        {:error, ValidationError.exception(
-          message: "Data point must be a map",
-          context: %{point_index: index, point_type: typeof(point)},
-          suggestions: ["Ensure all data points are maps with OHLC fields", "Check data parsing logic"]
-        )}
+        {:error,
+         ValidationError.exception(
+           message: "Data point must be a map",
+           context: %{point_index: index, point_type: typeof(point)},
+           suggestions: [
+             "Ensure all data points are maps with OHLC fields",
+             "Check data parsing logic"
+           ]
+         )}
     end
   end
 
@@ -399,23 +429,29 @@ defmodule ExPostFacto.Validation do
     has_alt = Enum.all?(alt_fields, &Map.has_key?(point, &1))
 
     case {has_required, has_alt} do
-      {true, _} -> :ok
-      {false, true} -> :ok
+      {true, _} ->
+        :ok
+
+      {false, true} ->
+        :ok
+
       {false, false} ->
         missing_fields = required_fields |> Enum.reject(&Map.has_key?(point, &1))
-        {:error, ValidationError.exception(
-          message: "Missing required OHLC fields in data point #{index}",
-          context: %{
-            point_index: index,
-            missing_fields: missing_fields,
-            available_fields: Map.keys(point)
-          },
-          suggestions: [
-            "Ensure all data points have open, high, low, close fields",
-            "Alternative short form (o, h, l, c) is also supported",
-            "Available fields: #{inspect(Map.keys(point))}"
-          ]
-        )}
+
+        {:error,
+         ValidationError.exception(
+           message: "Missing required OHLC fields in data point #{index}",
+           context: %{
+             point_index: index,
+             missing_fields: missing_fields,
+             available_fields: Map.keys(point)
+           },
+           suggestions: [
+             "Ensure all data points have open, high, low, close fields",
+             "Alternative short form (o, h, l, c) is also supported",
+             "Available fields: #{inspect(Map.keys(point))}"
+           ]
+         )}
     end
   end
 
@@ -428,28 +464,39 @@ defmodule ExPostFacto.Validation do
     ]
 
     case find_invalid_value(values) do
-      {:nil, field} ->
-        {:error, ValidationError.exception(
-          message: "#{String.capitalize(field)} value cannot be nil in data point #{index}",
-          context: %{point_index: index, field: field, point: point},
-          suggestions: ["Remove data points with nil values", "Use data cleaning to filter invalid points"]
-        )}
+      {nil, field} ->
+        {:error,
+         ValidationError.exception(
+           message: "#{String.capitalize(field)} value cannot be nil in data point #{index}",
+           context: %{point_index: index, field: field, point: point},
+           suggestions: [
+             "Remove data points with nil values",
+             "Use data cleaning to filter invalid points"
+           ]
+         )}
 
       {:non_numeric, field, value} ->
-        {:error, ValidationError.exception(
-          message: "#{String.capitalize(field)} value must be numeric in data point #{index}",
-          context: %{point_index: index, field: field, value: value, value_type: typeof(value)},
-          suggestions: ["Ensure all OHLC values are numbers", "Check data parsing and type conversion"]
-        )}
+        {:error,
+         ValidationError.exception(
+           message: "#{String.capitalize(field)} value must be numeric in data point #{index}",
+           context: %{point_index: index, field: field, value: value, value_type: typeof(value)},
+           suggestions: [
+             "Ensure all OHLC values are numbers",
+             "Check data parsing and type conversion"
+           ]
+         )}
 
       {:negative, field, value} ->
-        {:error, ValidationError.exception(
-          message: "#{String.capitalize(field)} value must be non-negative in data point #{index}",
-          context: %{point_index: index, field: field, value: value},
-          suggestions: ["Check data source for errors", "Remove or correct negative values"]
-        )}
+        {:error,
+         ValidationError.exception(
+           message:
+             "#{String.capitalize(field)} value must be non-negative in data point #{index}",
+           context: %{point_index: index, field: field, value: value},
+           suggestions: ["Check data source for errors", "Remove or correct negative values"]
+         )}
 
-      :ok -> :ok
+      :ok ->
+        :ok
     end
   end
 
@@ -461,45 +508,52 @@ defmodule ExPostFacto.Validation do
 
     cond do
       high < low ->
-        {:error, ValidationError.exception(
-          message: "Invalid OHLC relationship in data point #{index}: high < low",
-          context: %{point_index: index, high: high, low: low},
-          suggestions: ["Ensure high >= low for all data points", "Check data source for errors"]
-        )}
+        {:error,
+         ValidationError.exception(
+           message: "Invalid OHLC relationship in data point #{index}: high < low",
+           context: %{point_index: index, high: high, low: low},
+           suggestions: ["Ensure high >= low for all data points", "Check data source for errors"]
+         )}
 
       open > high ->
-        {:error, ValidationError.exception(
-          message: "Invalid OHLC relationship in data point #{index}: open > high",
-          context: %{point_index: index, open: open, high: high},
-          suggestions: ["Ensure open <= high for all data points", "Verify data integrity"]
-        )}
+        {:error,
+         ValidationError.exception(
+           message: "Invalid OHLC relationship in data point #{index}: open > high",
+           context: %{point_index: index, open: open, high: high},
+           suggestions: ["Ensure open <= high for all data points", "Verify data integrity"]
+         )}
 
       open < low ->
-        {:error, ValidationError.exception(
-          message: "Invalid OHLC relationship in data point #{index}: open < low",
-          context: %{point_index: index, open: open, low: low},
-          suggestions: ["Ensure open >= low for all data points", "Check data source"]
-        )}
+        {:error,
+         ValidationError.exception(
+           message: "Invalid OHLC relationship in data point #{index}: open < low",
+           context: %{point_index: index, open: open, low: low},
+           suggestions: ["Ensure open >= low for all data points", "Check data source"]
+         )}
 
       close > high ->
-        {:error, ValidationError.exception(
-          message: "Invalid OHLC relationship in data point #{index}: close > high",
-          context: %{point_index: index, close: close, high: high},
-          suggestions: ["Ensure close <= high for all data points", "Verify data accuracy"]
-        )}
+        {:error,
+         ValidationError.exception(
+           message: "Invalid OHLC relationship in data point #{index}: close > high",
+           context: %{point_index: index, close: close, high: high},
+           suggestions: ["Ensure close <= high for all data points", "Verify data accuracy"]
+         )}
 
       close < low ->
-        {:error, ValidationError.exception(
-          message: "Invalid OHLC relationship in data point #{index}: close < low",
-          context: %{point_index: index, close: close, low: low},
-          suggestions: ["Ensure close >= low for all data points", "Check data quality"]
-        )}
+        {:error,
+         ValidationError.exception(
+           message: "Invalid OHLC relationship in data point #{index}: close < low",
+           context: %{point_index: index, close: close, low: low},
+           suggestions: ["Ensure close >= low for all data points", "Check data quality"]
+         )}
 
-      true -> :ok
+      true ->
+        :ok
     end
   end
 
   defp maybe_validate_strict_checks(_point, _index, false), do: :ok
+
   defp maybe_validate_strict_checks(point, index, true) do
     # Strict mode additional checks
     high = get_field_value(point, :high, :h)
@@ -507,12 +561,17 @@ defmodule ExPostFacto.Validation do
 
     # Check for suspicious patterns
     range = high - low
+
     if range == 0 do
-      {:error, ValidationError.exception(
-        message: "Suspicious data in point #{index}: high equals low (no price movement)",
-        context: %{point_index: index, high: high, low: low},
-        suggestions: ["Verify if zero price movement is correct", "Consider using less strict validation"]
-      )}
+      {:error,
+       ValidationError.exception(
+         message: "Suspicious data in point #{index}: high equals low (no price movement)",
+         context: %{point_index: index, high: high, low: low},
+         suggestions: [
+           "Verify if zero price movement is correct",
+           "Consider using less strict validation"
+         ]
+       )}
     else
       :ok
     end
@@ -530,7 +589,8 @@ defmodule ExPostFacto.Validation do
       price_range[:coefficient_of_variation] > 2.0 ->
         {:warning, "High price volatility detected - results may be sensitive to outliers"}
 
-      true -> :ok
+      true ->
+        :ok
     end
   end
 
@@ -614,7 +674,8 @@ defmodule ExPostFacto.Validation do
       Keyword.get(options, :starting_balance, 0) == 0 ->
         {:warning, "Starting balance is 0 - profit/loss calculations may not be meaningful"}
 
-      true -> :ok
+      true ->
+        :ok
     end
   end
 
@@ -626,9 +687,11 @@ defmodule ExPostFacto.Validation do
         if debug_mode do
           IO.puts("[DEBUG] Warning: Using no-op strategy - no trades will be executed")
         end
+
         {:warning, "Using no-operation strategy - this is typically for testing only"}
 
-      _ -> :ok
+      _ ->
+        :ok
     end
   end
 
@@ -636,33 +699,41 @@ defmodule ExPostFacto.Validation do
   defp check_no_trades_warning(warnings, %Result{trades_count: 0}) do
     ["No trades executed - strategy may be too conservative or data insufficient" | warnings]
   end
+
   defp check_no_trades_warning(warnings, _), do: warnings
 
   defp check_excessive_trades_warning(warnings, %Result{trades_count: count}) when count > 1000 do
     ["Excessive trading detected (#{count} trades) - consider transaction costs" | warnings]
   end
+
   defp check_excessive_trades_warning(warnings, _), do: warnings
 
-  defp check_poor_performance_warning(warnings, %Result{total_profit_and_loss: pnl}) when pnl < 0 do
+  defp check_poor_performance_warning(warnings, %Result{total_profit_and_loss: pnl})
+       when pnl < 0 do
     ["Negative total return - strategy may need optimization" | warnings]
   end
+
   defp check_poor_performance_warning(warnings, _), do: warnings
 
-  defp check_high_drawdown_warning(warnings, %Result{max_draw_down_percentage: dd}) when dd < -20.0 do
+  defp check_high_drawdown_warning(warnings, %Result{max_draw_down_percentage: dd})
+       when dd < -20.0 do
     ["High maximum drawdown (#{Float.round(dd, 1)}%) - consider risk management" | warnings]
   end
+
   defp check_high_drawdown_warning(warnings, _), do: warnings
 
-  defp check_unusual_patterns_warning(warnings, %Result{win_rate: wr}) when wr > 95.0 or wr < 5.0 do
+  defp check_unusual_patterns_warning(warnings, %Result{win_rate: wr})
+       when wr > 95.0 or wr < 5.0 do
     ["Unusual win rate (#{Float.round(wr, 1)}%) - verify strategy logic" | warnings]
   end
+
   defp check_unusual_patterns_warning(warnings, _), do: warnings
 
   # Helper functions
   defp find_invalid_value(values) do
     Enum.find_value(values, :ok, fn {value, field} ->
       cond do
-        is_nil(value) -> {:nil, field}
+        is_nil(value) -> {nil, field}
         not is_number(value) -> {:non_numeric, field, value}
         value < 0 -> {:negative, field, value}
         true -> nil
@@ -686,12 +757,12 @@ defmodule ExPostFacto.Validation do
   end
 
   defp calculate_price_range(data) do
-    closes = Enum.map(data, &(get_field_value(&1, :close, :c)))
+    closes = Enum.map(data, &get_field_value(&1, :close, :c))
     valid_closes = Enum.filter(closes, &(not is_nil(&1) and is_number(&1)))
 
     if length(valid_closes) > 1 do
       mean = Enum.sum(valid_closes) / length(valid_closes)
-      variance = Enum.sum(Enum.map(valid_closes, &(:math.pow(&1 - mean, 2)))) / length(valid_closes)
+      variance = Enum.sum(Enum.map(valid_closes, &:math.pow(&1 - mean, 2))) / length(valid_closes)
       std_dev = :math.sqrt(variance)
 
       %{
@@ -723,16 +794,19 @@ defmodule ExPostFacto.Validation do
   end
 
   defp format_context(context) when map_size(context) == 0, do: nil
+
   defp format_context(context) do
     "Context: " <> Enum.map_join(context, ", ", fn {k, v} -> "#{k}: #{inspect(v)}" end)
   end
 
   defp format_suggestions([]), do: nil
+
   defp format_suggestions(suggestions) do
     "Suggestions:\n" <> Enum.map_join(suggestions, "\n", &("  - " <> &1))
   end
 
   defp format_debug_info(debug_info) when map_size(debug_info) == 0, do: nil
+
   defp format_debug_info(debug_info) do
     "Debug Info: " <> Enum.map_join(debug_info, ", ", fn {k, v} -> "#{k}: #{inspect(v)}" end)
   end

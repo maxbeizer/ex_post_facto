@@ -35,16 +35,23 @@ defmodule ExPostFacto.TradeStats.KellyCriterion do
   def kelly_criterion(%{trades_count: 0}), do: 0.0
 
   def kelly_criterion(result) do
-    win_rate = result.win_rate / 100  # Convert percentage to decimal
+    # Convert percentage to decimal
+    win_rate = result.win_rate / 100
     loss_rate = 1 - win_rate
 
     average_win = ProfitMetrics.average_winning_trade(result)
     average_loss = abs(ProfitMetrics.average_losing_trade(result))
 
     cond do
-      average_win == 0.0 -> 0.0
-      average_loss == 0.0 -> 0.0
-      loss_rate == 0.0 -> 0.0
+      average_win == 0.0 ->
+        0.0
+
+      average_loss == 0.0 ->
+        0.0
+
+      loss_rate == 0.0 ->
+        0.0
+
       true ->
         odds_ratio = average_win / average_loss
         (odds_ratio * win_rate - loss_rate) / odds_ratio
@@ -90,7 +97,11 @@ defmodule ExPostFacto.TradeStats.KellyCriterion do
   ## Returns
   Float representing the optimal position size in dollars
   """
-  @spec optimal_position_size(result :: %Result{}, current_capital :: float(), fraction :: float()) :: float()
+  @spec optimal_position_size(
+          result :: %Result{},
+          current_capital :: float(),
+          fraction :: float()
+        ) :: float()
   def optimal_position_size(result, current_capital, fraction \\ 0.25) do
     kelly_fraction = fractional_kelly(result, fraction)
     current_capital * kelly_fraction
@@ -109,17 +120,21 @@ defmodule ExPostFacto.TradeStats.KellyCriterion do
     returns =
       result.trade_pairs
       |> Enum.map(&TradePair.result_percentage/1)
-      |> Enum.map(fn percentage -> 1 + (percentage / 100) end)  # Convert to growth factors
+      # Convert to growth factors
+      |> Enum.map(fn percentage -> 1 + percentage / 100 end)
 
     case length(returns) do
-      0 -> 0.0
+      0 ->
+        0.0
+
       count ->
         geometric_mean =
           returns
           |> Enum.reduce(1.0, &(&1 * &2))
           |> :math.pow(1 / count)
 
-        (geometric_mean - 1) * 100  # Convert back to percentage
+        # Convert back to percentage
+        (geometric_mean - 1) * 100
     end
   end
 
@@ -134,22 +149,29 @@ defmodule ExPostFacto.TradeStats.KellyCriterion do
     kelly = kelly_criterion(result)
 
     if kelly <= 0.0 do
-      1.0  # Negative edge = certain ruin
+      # Negative edge = certain ruin
+      1.0
     else
       # Simplified risk of ruin calculation
       # In practice, this would use more sophisticated formulas
       win_rate = result.win_rate / 100
-      average_win_pct = if result.trades_count > 0 do
-        result.best_trade_by_percentage
-      else
-        0.0
-      end
+
+      average_win_pct =
+        if result.trades_count > 0 do
+          result.best_trade_by_percentage
+        else
+          0.0
+        end
 
       average_loss_pct = abs(result.worst_trade_by_percentage)
 
       cond do
-        average_win_pct == 0.0 -> 1.0
-        average_loss_pct == 0.0 -> 0.0
+        average_win_pct == 0.0 ->
+          1.0
+
+        average_loss_pct == 0.0 ->
+          0.0
+
         true ->
           # Simplified calculation based on win rate and average outcomes
           risk_ratio = average_loss_pct / average_win_pct

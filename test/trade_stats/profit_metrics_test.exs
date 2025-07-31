@@ -87,7 +87,8 @@ defmodule ExPostFactoTradeStatsProfitMetricsTest do
       }
 
       expectancy_pct = ProfitMetrics.expectancy_percentage(result)
-      assert 2.0 = expectancy_pct  # 20/1000 * 100 = 2%
+      # 20/1000 * 100 = 2%
+      assert 2.0 = expectancy_pct
     end
   end
 
@@ -125,8 +126,10 @@ defmodule ExPostFactoTradeStatsProfitMetricsTest do
       result = %Result{trade_pairs: trade_pairs}
       {gross_profit, gross_loss} = ProfitMetrics.gross_profit_and_loss(result)
 
-      assert 15.0 = gross_profit  # 10 + 5
-      assert -8.0 = gross_loss    # -8
+      # 10 + 5
+      assert 15.0 = gross_profit
+      # -8
+      assert -8.0 = gross_loss
     end
   end
 
@@ -166,7 +169,8 @@ defmodule ExPostFactoTradeStatsProfitMetricsTest do
 
       result = %Result{trade_pairs: trade_pairs}
       average_win = ProfitMetrics.average_winning_trade(result)
-      assert 15.0 = average_win  # (10 + 20) / 2
+      # (10 + 20) / 2
+      assert 15.0 = average_win
     end
   end
 
@@ -206,7 +210,8 @@ defmodule ExPostFactoTradeStatsProfitMetricsTest do
 
       result = %Result{trade_pairs: trade_pairs}
       average_loss = ProfitMetrics.average_losing_trade(result)
-      assert -7.5 = average_loss  # (-10 + -5) / 2
+      # (-10 + -5) / 2
+      assert -7.5 = average_loss
     end
   end
 

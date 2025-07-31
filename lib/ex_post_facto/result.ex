@@ -267,8 +267,10 @@ defmodule ExPostFacto.Result do
 
     # Estimate market metrics (using S&P 500 as default benchmark)
     # These could be made configurable in the future
-    benchmark_return = 10.0  # Typical S&P 500 annual return
-    risk_free_rate = 0.02    # Typical risk-free rate
+    # Typical S&P 500 annual return
+    benchmark_return = 10.0
+    # Typical risk-free rate
+    risk_free_rate = 0.02
 
     [
       {:trade_pairs, result.trade_pairs},
@@ -315,7 +317,8 @@ defmodule ExPostFacto.Result do
       # Market risk metrics (using default benchmark)
       {:alpha, MarketRisk.alpha(result, benchmark_return, risk_free_rate)},
       {:beta, MarketRisk.beta(result, benchmark_return, risk_free_rate)},
-      {:information_ratio, MarketRisk.information_ratio(result, benchmark_return, risk_free_rate)},
+      {:information_ratio,
+       MarketRisk.information_ratio(result, benchmark_return, risk_free_rate)},
       {:tracking_error, MarketRisk.tracking_error(result, benchmark_return)},
       {:market_correlation, MarketRisk.market_correlation(result)}
     ]

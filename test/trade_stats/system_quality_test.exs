@@ -66,7 +66,8 @@ defmodule ExPostFactoTradeStatsSystemQualityTest do
       sqn = SystemQuality.system_quality_number(result)
 
       assert is_float(sqn)
-      assert sqn > 0.0  # Should be positive since average is positive
+      # Should be positive since average is positive
+      assert sqn > 0.0
     end
   end
 
@@ -108,24 +109,25 @@ defmodule ExPostFactoTradeStatsSystemQualityTest do
 
     test "returns confidence level for adequate trades" do
       # Mock a result that would give a good SQN
-      trade_pairs = Enum.map(1..50, fn i ->
-        # Create alternating winning and slightly smaller losing trades
-        if rem(i, 2) == 0 do
-          %TradePair{
-            enter_point: %DataPoint{datum: %{open: 100.0}, action: :buy, index: i * 2},
-            exit_point: %DataPoint{datum: %{open: 110.0}, action: :close_buy, index: i * 2 + 1},
-            balance: 1100.0,
-            previous_balance: 1000.0
-          }
-        else
-          %TradePair{
-            enter_point: %DataPoint{datum: %{open: 105.0}, action: :buy, index: i * 2},
-            exit_point: %DataPoint{datum: %{open: 100.0}, action: :close_buy, index: i * 2 + 1},
-            balance: 1000.0,
-            previous_balance: 1050.0
-          }
-        end
-      end)
+      trade_pairs =
+        Enum.map(1..50, fn i ->
+          # Create alternating winning and slightly smaller losing trades
+          if rem(i, 2) == 0 do
+            %TradePair{
+              enter_point: %DataPoint{datum: %{open: 100.0}, action: :buy, index: i * 2},
+              exit_point: %DataPoint{datum: %{open: 110.0}, action: :close_buy, index: i * 2 + 1},
+              balance: 1100.0,
+              previous_balance: 1000.0
+            }
+          else
+            %TradePair{
+              enter_point: %DataPoint{datum: %{open: 105.0}, action: :buy, index: i * 2},
+              exit_point: %DataPoint{datum: %{open: 100.0}, action: :close_buy, index: i * 2 + 1},
+              balance: 1000.0,
+              previous_balance: 1050.0
+            }
+          end
+        end)
 
       result = %Result{trades_count: 50, trade_pairs: trade_pairs}
       confidence = SystemQuality.confidence_level(result)

@@ -128,8 +128,10 @@ defmodule ExPostFactoTradeStatsFinancialRatiosTest do
     test "calculates annual return correctly for multiple years" do
       result = %Result{
         starting_balance: 1000.0,
-        total_profit_and_loss: 210.0,  # 21% total return
-        duration: 730.5  # 2 years
+        # 21% total return
+        total_profit_and_loss: 210.0,
+        # 2 years
+        duration: 730.5
       }
 
       annual_return = FinancialRatios.annual_return_percentage(result)

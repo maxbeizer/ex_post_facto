@@ -9,13 +9,17 @@ defmodule ExPostFactoTradeStatsMarketRiskTest do
     test "calculates alpha correctly" do
       result = %Result{
         starting_balance: 1000.0,
-        total_profit_and_loss: 200.0,  # 20% return
-        duration: 365.25,  # 1 year
+        # 20% return
+        total_profit_and_loss: 200.0,
+        # 1 year
+        duration: 365.25,
         trade_pairs: []
       }
 
-      benchmark_return = 10.0  # 10% benchmark return
-      risk_free_rate = 0.02    # 2% risk-free rate
+      # 10% benchmark return
+      benchmark_return = 10.0
+      # 2% risk-free rate
+      risk_free_rate = 0.02
 
       alpha = MarketRisk.alpha(result, benchmark_return, risk_free_rate)
       assert is_float(alpha)
@@ -136,7 +140,8 @@ defmodule ExPostFactoTradeStatsMarketRiskTest do
       # Create a result that would have zero tracking error
       result = %Result{
         starting_balance: 1000.0,
-        total_profit_and_loss: 100.0,  # 10% return same as benchmark
+        # 10% return same as benchmark
+        total_profit_and_loss: 100.0,
         duration: 365.25,
         trade_pairs: []
       }
@@ -152,7 +157,8 @@ defmodule ExPostFactoTradeStatsMarketRiskTest do
       benchmark_drawdown = -10.0
 
       relative_dd = MarketRisk.relative_drawdown(result, benchmark_drawdown)
-      assert -5.0 = relative_dd  # -15 - (-10) = -5
+      # -15 - (-10) = -5
+      assert -5.0 = relative_dd
     end
 
     test "handles positive relative performance" do
@@ -160,7 +166,8 @@ defmodule ExPostFactoTradeStatsMarketRiskTest do
       benchmark_drawdown = -12.0
 
       relative_dd = MarketRisk.relative_drawdown(result, benchmark_drawdown)
-      assert 4.0 = relative_dd  # -8 - (-12) = 4
+      # -8 - (-12) = 4
+      assert 4.0 = relative_dd
     end
   end
 
