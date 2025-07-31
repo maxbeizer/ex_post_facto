@@ -264,4 +264,83 @@ defmodule ExPostFactoTest do
     # 2 * (1.75 - 0.75) = -2.0
     assert -2.0 == result.total_profit_and_loss
   end
+
+  describe "optimize/4" do
+    test "performs grid search optimization successfully" do
+      data = generate_trending_test_data(30)
+      
+      {:ok, result} = ExPostFacto.optimize(
+        data,
+        ExPostFacto.ExampleStrategies.SmaStrategy,
+        [fast_period: 5..7, slow_period: 15..17],
+        maximize: :total_return_pct
+      )
+      
+      assert result.method == :grid_search
+      assert result.metric == :total_return_pct
+      assert is_list(result.best_params)
+      assert is_number(result.best_score)
+      assert length(result.all_results) == 9  # 3 x 3 combinations
+    end
+
+    test "performs random search optimization successfully" do
+      data = generate_trending_test_data(25)
+      
+      {:ok, result} = ExPostFacto.optimize(
+        data,
+        ExPostFacto.ExampleStrategies.SmaStrategy,
+        [fast_period: 5..10, slow_period: 15..25],
+        method: :random_search,
+        samples: 8,
+        maximize: :sharpe_ratio
+      )
+      
+      assert result.method == :random_search
+      assert result.metric == :sharpe_ratio
+      assert length(result.all_results) == 8
+    end
+
+    test "returns error for unsupported optimization method" do
+      data = [build_candle(open: 10.0, close: 10.5)]
+      
+      {:error, message} = ExPostFacto.optimize(
+        data,
+        ExPostFacto.ExampleStrategies.SmaStrategy,
+        [fast_period: [5], slow_period: [15]],
+        method: :genetic_algorithm
+      )
+      
+      assert String.contains?(message, "Unsupported optimization method")
+    end
+
+    test "uses default optimization settings when not specified" do
+      data = generate_trending_test_data(20)
+      
+      {:ok, result} = ExPostFacto.optimize(
+        data,
+        ExPostFacto.ExampleStrategies.SmaStrategy,
+        [fast_period: [5], slow_period: [15]]
+      )
+      
+      # Should default to grid search and sharpe_ratio
+      assert result.method == :grid_search
+      assert result.metric == :sharpe_ratio
+    end
+  end
+
+  # Helper function to generate trending test data
+  defp generate_trending_test_data(count) do
+    Enum.map(1..count, fn i ->
+      base_price = 10.0 + i * 0.1
+      random_offset = (:rand.uniform() - 0.5) * 0.05
+      price = base_price + random_offset
+      
+      build_candle(
+        open: price,
+        close: price + 0.05 + random_offset,
+        high: price + 0.1,
+        low: price - 0.05
+      )
+    end)
+  end
 end

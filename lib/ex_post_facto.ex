@@ -9,6 +9,7 @@ defmodule ExPostFacto do
     DataPoint,
     Indicators,
     InputData,
+    Optimizer,
     Output,
     Result,
     StrategyContext,
@@ -85,6 +86,81 @@ defmodule ExPostFacto do
     case backtest(data, strategy, options) do
       {:ok, output} -> output
       {:error, error} -> raise BacktestError, message: error
+    end
+  end
+
+  @doc """
+  Optimize strategy parameters using the specified optimization method.
+
+  Finds optimal strategy parameters by running multiple backtests with different
+  parameter combinations and evaluating them based on the target metric.
+
+  ## Parameters
+
+  - `data` - Market data for backtesting
+  - `strategy_module` - Strategy module to optimize (must implement ExPostFacto.Strategy)
+  - `param_ranges` - Keyword list of parameter names to ranges
+  - `opts` - Options including optimization method and target metric
+
+  ## Options
+
+  - `:method` - Optimization method (`:grid_search` or `:random_search`) (default: `:grid_search`)
+  - `:maximize` - Metric to optimize (default: `:sharpe_ratio`)
+  - `:starting_balance` - Starting balance for backtests (default: 10_000.0)
+  - `:max_combinations` - Maximum parameter combinations for grid search (default: 1000)
+  - `:samples` - Number of samples for random search (default: 100)
+
+  ## Supported Metrics
+
+  - `:sharpe_ratio` - Sharpe ratio (risk-adjusted return)
+  - `:total_return_pct` - Total percentage return
+  - `:cagr_pct` - Compound Annual Growth Rate
+  - `:profit_factor` - Gross profit / gross loss
+  - `:sqn` - System Quality Number
+  - `:win_rate` - Percentage of winning trades
+  - `:max_draw_down_percentage` - Maximum drawdown (minimized)
+
+  ## Examples
+
+      # Grid search optimization
+      {:ok, results} = ExPostFacto.optimize(
+        market_data,
+        MyStrategy,
+        [fast: 5..20, slow: 20..50],
+        maximize: :sharpe_ratio
+      )
+
+      # Random search with more samples
+      {:ok, results} = ExPostFacto.optimize(
+        market_data,
+        MyStrategy,
+        [fast: 5..20, slow: 20..50],
+        method: :random_search,
+        samples: 200,
+        maximize: :total_return_pct
+      )
+
+      # Access optimization results
+      IO.puts("Best parameters: \#{inspect(result.best_params)}")
+      IO.puts("Best score: \#{result.best_score}")
+
+  """
+  @spec optimize(
+          data :: [map()],
+          strategy_module :: atom(),
+          param_ranges :: [{atom(), Range.t() | [any()]}],
+          opts :: keyword()
+        ) :: {:ok, map()} | {:error, String.t()}
+  def optimize(data, strategy_module, param_ranges, opts \\ []) do
+    method = Keyword.get(opts, :method, :grid_search)
+    
+    case method do
+      :grid_search ->
+        Optimizer.grid_search(data, strategy_module, param_ranges, opts)
+      :random_search ->
+        Optimizer.random_search(data, strategy_module, param_ranges, opts)
+      _ ->
+        {:error, "Unsupported optimization method: #{method}. Supported methods: :grid_search, :random_search"}
     end
   end
 
