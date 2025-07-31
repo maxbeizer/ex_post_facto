@@ -24,7 +24,7 @@ defmodule ExPostFacto.Indicators.Streaming do
 
       # Process data points one by one
       large_data_stream
-      |> Stream.map(fn price -> 
+      |> Stream.map(fn price ->
            ExPostFacto.Indicators.Streaming.SMA.update(sma_processor, price)
          end)
       |> Stream.filter(&(&1 != nil))  # Filter out incomplete periods

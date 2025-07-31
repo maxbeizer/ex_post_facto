@@ -272,7 +272,7 @@ defmodule ExPostFacto.Optimizer do
   ## Example
 
       {:ok, heatmap} = ExPostFacto.Optimizer.heatmap(results, :fast_period, :slow_period)
-      
+
       # Access heatmap data
       x_values = heatmap.x_values     # [5, 6, 7, ...]
       y_values = heatmap.y_values     # [15, 16, 17, ...]
