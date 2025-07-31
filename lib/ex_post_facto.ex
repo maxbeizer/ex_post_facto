@@ -151,9 +151,13 @@ defmodule ExPostFacto do
     clean_enabled = Keyword.get(options, :clean_data, Keyword.get(options, :validate_data, true))
     validate_enabled = Keyword.get(options, :validate_data, true)
 
-    with {:ok, cleaned_data} <- maybe_clean_data(data, Keyword.put(options, :clean_data, clean_enabled)),
-         {:ok, validated_data} <- maybe_validate_data(cleaned_data, Keyword.put(options, :validate_data, validate_enabled)) do
-
+    with {:ok, cleaned_data} <-
+           maybe_clean_data(data, Keyword.put(options, :clean_data, clean_enabled)),
+         {:ok, validated_data} <-
+           maybe_validate_data(
+             cleaned_data,
+             Keyword.put(options, :validate_data, validate_enabled)
+           ) do
       # Check if data is empty after cleaning/validation
       if Enum.empty?(validated_data) do
         {:error, "data cannot be empty"}
@@ -181,7 +185,7 @@ defmodule ExPostFacto do
     end
   end
 
-    # Handle strategy behaviour
+  # Handle strategy behaviour
   defp backtest_with_behaviour(data, {module, strategy_state}, options) do
     result = build_initial_result(data, options)
 
@@ -234,10 +238,18 @@ defmodule ExPostFacto do
   @spec load_data_from_source(String.t()) :: {:ok, [map()]} | {:error, String.t()}
   def load_data_from_source(source) when is_binary(source) do
     cond do
-      String.ends_with?(source, ".csv") -> load_csv_data(source)
-      String.starts_with?(source, "[") or String.starts_with?(source, "{") -> parse_json_data(source)
-      File.exists?(source) -> load_csv_data(source)  # Default to CSV for existing files
-      true -> {:error, "unsupported data format or file not found"}
+      String.ends_with?(source, ".csv") ->
+        load_csv_data(source)
+
+      String.starts_with?(source, "[") or String.starts_with?(source, "{") ->
+        parse_json_data(source)
+
+      # Default to CSV for existing files
+      File.exists?(source) ->
+        load_csv_data(source)
+
+      true ->
+        {:error, "unsupported data format or file not found"}
     end
   end
 
@@ -276,7 +288,9 @@ defmodule ExPostFacto do
       lines = String.split(content, "\n", trim: true)
 
       case lines do
-        [] -> {:error, "empty CSV file"}
+        [] ->
+          {:error, "empty CSV file"}
+
         [header | data_lines] ->
           headers = parse_csv_header(header)
           data = Enum.map(data_lines, &parse_csv_line(&1, headers))
@@ -326,6 +340,7 @@ defmodule ExPostFacto do
   defp parse_csv_value(value, header) when header in [:timestamp, :date, :time] do
     String.trim(value)
   end
+
   defp parse_csv_value(value, _header) do
     case Float.parse(String.trim(value)) do
       {float_val, ""} -> float_val
@@ -341,6 +356,7 @@ defmodule ExPostFacto do
       case json_string do
         ~s([{"open": 100.0, "high": 105.0, "low": 98.0, "close": 102.0}]) ->
           {:ok, [%{"open" => 100.0, "high" => 105.0, "low" => 98.0, "close" => 102.0}]}
+
         _ ->
           # Try the general parsing approach
           if String.starts_with?(json_string, "[{") and String.ends_with?(json_string, "}]") do
@@ -433,6 +449,7 @@ defmodule ExPostFacto do
     |> Keyword.put(:end_date, nil)
     |> Result.new()
   end
+
   defp build_initial_result(data, options) do
     start_date = hd(data) |> InputData.munge() |> Map.get(:timestamp)
     end_date = List.last(data) |> InputData.munge() |> Map.get(:timestamp)
@@ -463,6 +480,7 @@ defmodule ExPostFacto do
   def validate_data(data)
   def validate_data([]), do: {:error, "data cannot be empty"}
   def validate_data(nil), do: {:error, "data cannot be nil"}
+
   def validate_data(data) when is_list(data) do
     data
     |> Enum.with_index()
@@ -473,6 +491,7 @@ defmodule ExPostFacto do
       end
     end)
   end
+
   def validate_data(data) when is_map(data), do: validate_data_point(data)
 
   @doc """
@@ -495,6 +514,7 @@ defmodule ExPostFacto do
   def clean_data(data)
   def clean_data([]), do: {:ok, []}
   def clean_data(nil), do: {:error, "data cannot be nil"}
+
   def clean_data(data) when is_list(data) do
     cleaned_data =
       data
@@ -513,6 +533,7 @@ defmodule ExPostFacto do
       :ok
     end
   end
+
   defp validate_data_point(_), do: {:error, "data point must be a map"}
 
   @spec validate_required_fields(map()) :: :ok | {:error, String.t()}
@@ -575,7 +596,9 @@ defmodule ExPostFacto do
         else
           {:error, _} -> false
         end
-      _ -> false
+
+      _ ->
+        false
     end
   end
 
@@ -587,6 +610,7 @@ defmodule ExPostFacto do
   @spec get_timestamp_for_sorting(map()) :: String.t() | nil
   defp get_timestamp_for_sorting(point) do
     timestamp = Map.get(point, :timestamp) || Map.get(point, :t)
+
     if is_nil(timestamp) or timestamp == "" do
       # For data without timestamps, use a unique identifier to avoid deduplication
       # Use the map's hash as a fallback to preserve all unique data points

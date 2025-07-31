@@ -8,11 +8,20 @@ defmodule ExPostFactoDataFormatsTest do
       {:ok, data} = ExPostFacto.load_data_from_source("test/fixtures/sample.csv")
 
       assert length(data) == 3
-      assert %{open: 100.0, high: 105.0, low: 98.0, close: 102.0, volume: 1_000_000.0, timestamp: "2023-01-01"} = hd(data)
+
+      assert %{
+               open: 100.0,
+               high: 105.0,
+               low: 98.0,
+               close: 102.0,
+               volume: 1_000_000.0,
+               timestamp: "2023-01-01"
+             } = hd(data)
     end
 
     test "returns error for non-existent file" do
-      assert {:error, "failed to read file: enoent"} = ExPostFacto.load_data_from_source("nonexistent.csv")
+      assert {:error, "failed to read file: enoent"} =
+               ExPostFacto.load_data_from_source("nonexistent.csv")
     end
 
     test "parses simple JSON array" do
@@ -25,7 +34,8 @@ defmodule ExPostFactoDataFormatsTest do
     end
 
     test "returns error for unsupported format" do
-      assert {:error, "unsupported data format or file not found"} = ExPostFacto.load_data_from_source("unknown_format")
+      assert {:error, "unsupported data format or file not found"} =
+               ExPostFacto.load_data_from_source("unknown_format")
     end
   end
 
@@ -46,7 +56,8 @@ defmodule ExPostFactoDataFormatsTest do
     end
 
     test "validates data by default" do
-      invalid_data = [%{open: 100.0, high: 95.0, low: 98.0, close: 102.0}]  # high < low
+      # high < low
+      invalid_data = [%{open: 100.0, high: 95.0, low: 98.0, close: 102.0}]
 
       {:error, reason} = ExPostFacto.backtest(invalid_data, {Noop, :noop, []})
 
@@ -55,7 +66,8 @@ defmodule ExPostFactoDataFormatsTest do
     end
 
     test "can skip validation with option" do
-      invalid_data = [%{open: 100.0, high: 95.0, low: 98.0, close: 102.0}]  # high < low
+      # high < low
+      invalid_data = [%{open: 100.0, high: 95.0, low: 98.0, close: 102.0}]
 
       {:ok, output} = ExPostFacto.backtest(invalid_data, {Noop, :noop, []}, validate_data: false)
 
@@ -65,7 +77,8 @@ defmodule ExPostFactoDataFormatsTest do
     test "cleans data by default" do
       dirty_data = [
         %{open: 100.0, high: 105.0, low: 98.0, close: 102.0, timestamp: "2023-01-02"},
-        %{open: nil, high: 105.0, low: 98.0, close: 102.0, timestamp: "2023-01-01"},  # invalid
+        # invalid
+        %{open: nil, high: 105.0, low: 98.0, close: 102.0, timestamp: "2023-01-01"},
         %{open: 99.0, high: 104.0, low: 97.0, close: 101.0, timestamp: "2023-01-03"}
       ]
 
@@ -78,7 +91,8 @@ defmodule ExPostFactoDataFormatsTest do
     test "can skip cleaning with option" do
       dirty_data = [
         %{open: 100.0, high: 105.0, low: 98.0, close: 102.0, timestamp: "2023-01-02"},
-        %{open: 99.0, high: 104.0, low: 97.0, close: 101.0, timestamp: "2023-01-01"}  # out of order
+        # out of order
+        %{open: 99.0, high: 104.0, low: 97.0, close: 101.0, timestamp: "2023-01-01"}
       ]
 
       {:ok, output} = ExPostFacto.backtest(dirty_data, {Noop, :noop, []}, clean_data: false)

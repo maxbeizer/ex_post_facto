@@ -111,7 +111,8 @@ defmodule ExPostFactoTest do
       build_candle(open: 0.75)
     ]
 
-    {:ok, %{result: result}} = ExPostFacto.backtest(example_data, {BuyBuyBuy, :call, []}, validate_data: false)
+    {:ok, %{result: result}} =
+      ExPostFacto.backtest(example_data, {BuyBuyBuy, :call, []}, validate_data: false)
 
     assert 0.0 == result.total_profit_and_loss
   end

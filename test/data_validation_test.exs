@@ -125,13 +125,16 @@ defmodule ExPostFactoDataValidationTest do
 
     test "removes invalid data points" do
       dirty_data = [
-        %{open: 1.0, high: 2.0, low: 0.5, close: 1.5},  # valid
-        %{open: nil, high: 2.0, low: 0.5, close: 1.5},  # invalid - nil value
-        %{open: 1.0, high: 1.0, low: 2.0, close: 1.5}   # invalid - high < low
+        # valid
+        %{open: 1.0, high: 2.0, low: 0.5, close: 1.5},
+        # invalid - nil value
+        %{open: nil, high: 2.0, low: 0.5, close: 1.5},
+        # invalid - high < low
+        %{open: 1.0, high: 1.0, low: 2.0, close: 1.5}
       ]
 
       {:ok, cleaned} = ExPostFacto.clean_data(dirty_data)
-      
+
       assert length(cleaned) == 1
       assert hd(cleaned) == %{open: 1.0, high: 2.0, low: 0.5, close: 1.5}
     end
@@ -144,7 +147,7 @@ defmodule ExPostFactoDataValidationTest do
       ]
 
       {:ok, cleaned} = ExPostFacto.clean_data(unsorted_data)
-      
+
       timestamps = Enum.map(cleaned, & &1.timestamp)
       assert timestamps == ["2023-01-01", "2023-01-02", "2023-01-03"]
     end
@@ -152,12 +155,13 @@ defmodule ExPostFactoDataValidationTest do
     test "removes duplicate timestamps" do
       data_with_duplicates = [
         %{open: 1.0, high: 2.0, low: 0.5, close: 1.5, timestamp: "2023-01-01"},
-        %{open: 1.1, high: 2.1, low: 0.6, close: 1.6, timestamp: "2023-01-01"},  # duplicate timestamp
+        # duplicate timestamp
+        %{open: 1.1, high: 2.1, low: 0.6, close: 1.6, timestamp: "2023-01-01"},
         %{open: 1.2, high: 2.2, low: 0.7, close: 1.7, timestamp: "2023-01-02"}
       ]
 
       {:ok, cleaned} = ExPostFacto.clean_data(data_with_duplicates)
-      
+
       assert length(cleaned) == 2
       timestamps = Enum.map(cleaned, & &1.timestamp)
       assert timestamps == ["2023-01-01", "2023-01-02"]
@@ -170,18 +174,20 @@ defmodule ExPostFactoDataValidationTest do
       ]
 
       {:ok, cleaned} = ExPostFacto.clean_data(data_without_timestamps)
-      
+
       assert length(cleaned) == 2
     end
 
     test "handles mixed timestamp formats" do
       mixed_data = [
-        %{open: 1.0, high: 2.0, low: 0.5, close: 1.5, t: "2023-01-01"},  # short key
-        %{open: 1.2, high: 2.2, low: 0.7, close: 1.7, timestamp: "2023-01-02"}  # long key
+        # short key
+        %{open: 1.0, high: 2.0, low: 0.5, close: 1.5, t: "2023-01-01"},
+        # long key
+        %{open: 1.2, high: 2.2, low: 0.7, close: 1.7, timestamp: "2023-01-02"}
       ]
 
       {:ok, cleaned} = ExPostFacto.clean_data(mixed_data)
-      
+
       assert length(cleaned) == 2
     end
   end

@@ -9,7 +9,8 @@ defmodule ExPostFacto.TradeStats.Duration do
   Given a string representing a start and end date, return the number of days
   between the two points. Also handles DateTime structs.
   """
-  @spec call!(start_date :: String.t() | DateTime.t(), end_date :: String.t() | DateTime.t()) :: number() | nil
+  @spec call!(start_date :: String.t() | DateTime.t(), end_date :: String.t() | DateTime.t()) ::
+          number() | nil
   def call!(nil, nil), do: nil
   def call!(_, nil), do: nil
   def call!(nil, _), do: nil

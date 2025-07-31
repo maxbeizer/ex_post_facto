@@ -97,12 +97,15 @@ defmodule ExPostFacto.InputData do
   @spec normalize_timestamp(String.t() | DateTime.t() | nil) :: DateTime.t() | String.t() | nil
   def normalize_timestamp(nil), do: nil
   def normalize_timestamp(%DateTime{} = dt), do: dt
+
   def normalize_timestamp(timestamp) when is_binary(timestamp) do
     case parse_timestamp(timestamp) do
       {:ok, datetime} -> datetime
-      {:error, _} -> timestamp  # Keep original if parsing fails
+      # Keep original if parsing fails
+      {:error, _} -> timestamp
     end
   end
+
   def normalize_timestamp(timestamp), do: timestamp
 
   @spec parse_timestamp(String.t()) :: {:ok, DateTime.t()} | {:error, any()}

@@ -43,7 +43,8 @@ defmodule ExPostFactoIntegrationTest do
     test "backtest with CSV file and custom starting balance" do
       csv_path = "test/fixtures/orcl-1995-2014.txt"
 
-      {:ok, output} = ExPostFacto.backtest(csv_path, {Noop, :noop, []}, starting_balance: 100_000.0)
+      {:ok, output} =
+        ExPostFacto.backtest(csv_path, {Noop, :noop, []}, starting_balance: 100_000.0)
 
       assert %ExPostFacto.Output{} = output
       assert output.result.starting_balance == 100_000.0
@@ -57,9 +58,12 @@ defmodule ExPostFactoIntegrationTest do
         %{open: 102.0, high: 108.0, low: 101.0, close: 106.0, timestamp: "2023-01-02"},
 
         # Invalid data points that should be filtered out
-        %{open: nil, high: 105.0, low: 98.0, close: 102.0, timestamp: "2023-01-03"},  # nil value
-        %{open: 100.0, high: 95.0, low: 98.0, close: 102.0, timestamp: "2023-01-04"}, # high < low
-        %{open: -1.0, high: 105.0, low: 98.0, close: 102.0, timestamp: "2023-01-05"}, # negative price
+        # nil value
+        %{open: nil, high: 105.0, low: 98.0, close: 102.0, timestamp: "2023-01-03"},
+        # high < low
+        %{open: 100.0, high: 95.0, low: 98.0, close: 102.0, timestamp: "2023-01-04"},
+        # negative price
+        %{open: -1.0, high: 105.0, low: 98.0, close: 102.0, timestamp: "2023-01-05"},
 
         # More valid data
         %{open: 106.0, high: 110.0, low: 104.0, close: 108.0, timestamp: "2023-01-06"}
@@ -84,9 +88,12 @@ defmodule ExPostFactoIntegrationTest do
 
     test "demonstrates timestamp normalization across formats" do
       mixed_timestamp_data = [
-        %{open: 100.0, high: 105.0, low: 98.0, close: 102.0, timestamp: "2023-01-01"},           # Date string
-        %{open: 102.0, high: 108.0, low: 101.0, close: 106.0, timestamp: "2023-01-02T12:00:00Z"}, # ISO 8601
-        %{open: 106.0, high: 110.0, low: 104.0, close: 108.0, t: "1672790400"}                    # Unix timestamp
+        # Date string
+        %{open: 100.0, high: 105.0, low: 98.0, close: 102.0, timestamp: "2023-01-01"},
+        # ISO 8601
+        %{open: 102.0, high: 108.0, low: 101.0, close: 106.0, timestamp: "2023-01-02T12:00:00Z"},
+        # Unix timestamp
+        %{open: 106.0, high: 110.0, low: 104.0, close: 108.0, t: "1672790400"}
       ]
 
       # Load and process the data
@@ -107,29 +114,34 @@ defmodule ExPostFactoIntegrationTest do
 
     test "performance with large dataset validation and cleaning" do
       # Create a large dataset (simulating real-world scenario)
-      large_dataset = Enum.map(1..1000, fn i ->
-        # Generate valid OHLC data by ensuring proper relationships
-        base_price = 100.0
-        open = base_price + (:rand.uniform() - 0.5) * 10  # 95-105 range
-        close = base_price + (:rand.uniform() - 0.5) * 10  # 95-105 range
+      large_dataset =
+        Enum.map(1..1000, fn i ->
+          # Generate valid OHLC data by ensuring proper relationships
+          base_price = 100.0
+          # 95-105 range
+          open = base_price + (:rand.uniform() - 0.5) * 10
+          # 95-105 range
+          close = base_price + (:rand.uniform() - 0.5) * 10
 
-        # Ensure high is at least as high as max(open, close)
-        min_high = max(open, close)
-        high = min_high + :rand.uniform() * 5  # At least min_high, up to min_high + 5
+          # Ensure high is at least as high as max(open, close)
+          min_high = max(open, close)
+          # At least min_high, up to min_high + 5
+          high = min_high + :rand.uniform() * 5
 
-        # Ensure low is at most as low as min(open, close)
-        max_low = min(open, close)
-        low = max_low - :rand.uniform() * 5  # At most max_low, down to max_low - 5
+          # Ensure low is at most as low as min(open, close)
+          max_low = min(open, close)
+          # At most max_low, down to max_low - 5
+          low = max_low - :rand.uniform() * 5
 
-        %{
-          open: open,
-          high: high,
-          low: low,
-          close: close,
-          volume: :rand.uniform(1_000_000),
-          timestamp: "2023-01-#{:io_lib.format("~2..0B", [rem(i, 28) + 1])}"
-        }
-      end)
+          %{
+            open: open,
+            high: high,
+            low: low,
+            close: close,
+            volume: :rand.uniform(1_000_000),
+            timestamp: "2023-01-#{:io_lib.format("~2..0B", [rem(i, 28) + 1])}"
+          }
+        end)
 
       # Measure validation time
       start_time = System.monotonic_time(:millisecond)
