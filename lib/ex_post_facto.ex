@@ -9,12 +9,15 @@ defmodule ExPostFacto do
     DataPoint,
     InputData,
     Output,
-    Result
+    Result,
+    StrategyContext
   }
 
   @actions [:buy, :sell, :close_buy, :close_sell]
   @type action :: :buy | :sell | :close_buy | :close_sell
   @type module_function_arguments :: {module :: atom(), function :: atom(), args :: list()}
+  @type strategy_module :: {module :: atom(), opts :: keyword()}
+  @type strategy :: module_function_arguments() | strategy_module()
 
   defmodule BacktestError do
     @moduledoc false
@@ -24,9 +27,13 @@ defmodule ExPostFacto do
 
   @doc """
   The main entry point of the library. This function takes in a list of HLOC
-  data and function that will be used to generate buy and sell signals. The
-  function should return `:buy`, `:sell`, `:close` when called. Options may also
-  be passed in, optionns are TBD.
+  data and a strategy that will be used to generate buy and sell signals. 
+
+  The strategy can be either:
+  - A traditional MFA tuple: `{Module, :function, args}` 
+  - A Strategy behaviour module: `{Module, opts}` where Module implements ExPostFacto.Strategy
+
+  Options may also be passed in for configuration.
 
   The function returns output struct or raises an error
 
@@ -40,10 +47,16 @@ defmodule ExPostFacto do
 
       iex> ExPostFacto.backtest!([%{o: 1.0, h: 2.0, l: 0.5, c: 1.0}], nil)
       ** (ExPostFacto.BacktestError) strategy cannot be nil
+
+      # Using new Strategy behaviour
+      iex> ExPostFacto.backtest!(data, {MyStrategy, [param: 10]})
+
+      # Using traditional MFA tuple
+      iex> ExPostFacto.backtest!(data, {MyModule, :my_function, []})
   """
   @spec backtest!(
           data :: [DataPoint.t()],
-          strategy :: module_function_arguments(),
+          strategy :: strategy(),
           options :: keyword()
         ) ::
           Output.t() | no_return()
@@ -56,9 +69,13 @@ defmodule ExPostFacto do
 
   @doc """
   The other main entry point of the library. This function takes in a list of
-  HLOC data and function that will be used to generate buy and sell signals. The
-  function should return `:buy`, `:sell`, `:close` when called. Options may also
-  be passed in, optionns are TBD.
+  HLOC data and a strategy that will be used to generate buy and sell signals. 
+
+  The strategy can be either:
+  - A traditional MFA tuple: `{Module, :function, args}` 
+  - A Strategy behaviour module: `{Module, opts}` where Module implements ExPostFacto.Strategy
+
+  Options may also be passed in for configuration.
 
   The function returns an ok or error tuple. In an ok tuple, the data, and a
   results struct are returned. In an error tuple, a string is returned with the
@@ -74,10 +91,16 @@ defmodule ExPostFacto do
 
       iex> ExPostFacto.backtest([%{o: 1.0, h: 2.0, l: 0.5, c: 1.0}], nil)
       {:error, "strategy cannot be nil"}
+
+      # Using new Strategy behaviour
+      iex> ExPostFacto.backtest(data, {MyStrategy, [param: 10]})
+
+      # Using traditional MFA tuple  
+      iex> ExPostFacto.backtest(data, {MyModule, :my_function, []})
   """
   @spec backtest(
           data :: [DataPoint.t()],
-          strategy :: module_function_arguments(),
+          strategy :: strategy(),
           options :: keyword()
         ) ::
           {:ok, Output.t()} | {:error, String.t()}
@@ -87,6 +110,50 @@ defmodule ExPostFacto do
   def backtest(_data, nil, _options), do: {:error, "strategy cannot be nil"}
 
   def backtest(data, strategy, options) do
+    # Initialize strategy if it's a behaviour-based strategy
+    case strategy do
+      {module, opts} when is_list(opts) ->
+        case initialize_strategy_behaviour(module, opts) do
+          {:ok, strategy_state} ->
+            backtest_with_behaviour(data, {module, strategy_state}, options)
+
+          {:error, reason} ->
+            {:error, "strategy initialization failed: #{inspect(reason)}"}
+        end
+
+      {_module, _function, _args} ->
+        backtest_with_mfa(data, strategy, options)
+
+      _ ->
+        {:error, "invalid strategy format"}
+    end
+  end
+
+  # Handle behaviour-based strategies
+  defp backtest_with_behaviour(data, {module, strategy_state}, options) do
+    result = build_initial_result(data, options)
+
+    # Start the strategy context
+    :ok = StrategyContext.start_link()
+
+    try do
+      result =
+        data
+        |> Enum.map(&InputData.munge/1)
+        |> Enum.with_index(fn datum, index -> {index, datum} end)
+        |> Enum.chunk_every(2, 1, :discard)
+        |> Enum.reduce({result, strategy_state}, &apply_behaviour_strategy(&1, &2, module))
+        |> elem(0)
+        |> Result.compile(options)
+
+      {:ok, Output.new(data, {module, []}, result)}
+    after
+      StrategyContext.stop()
+    end
+  end
+
+  # Handle traditional MFA strategies  
+  defp backtest_with_mfa(data, strategy, options) do
     result = build_initial_result(data, options)
 
     result =
@@ -94,18 +161,61 @@ defmodule ExPostFacto do
       |> Enum.map(&InputData.munge/1)
       |> Enum.with_index(fn datum, index -> {index, datum} end)
       |> Enum.chunk_every(2, 1, :discard)
-      |> Enum.reduce(result, &apply_strategy(&1, &2, strategy))
+      |> Enum.reduce(result, &apply_mfa_strategy(&1, &2, strategy))
       |> Result.compile(options)
 
     {:ok, Output.new(data, strategy, result)}
   end
 
-  @spec apply_strategy(
+  defp initialize_strategy_behaviour(module, opts) do
+    if function_exported?(module, :init, 1) do
+      module.init(opts)
+    else
+      {:error, "module #{inspect(module)} does not implement ExPostFacto.Strategy behaviour"}
+    end
+  end
+
+  @spec apply_behaviour_strategy(
+          [{index :: non_neg_integer(), datum :: DataPoint.t()}],
+          {result :: Result.t(), strategy_state :: any()},
+          module :: atom()
+        ) :: {Result.t(), any()}
+  defp apply_behaviour_strategy(
+         [{_index, datum}, {next_index, next_datum}],
+         {result, strategy_state},
+         module
+       ) do
+    # Set up context for the strategy
+    :ok = StrategyContext.set_context(datum, result)
+
+    # Call the strategy's next function
+    case module.next(strategy_state) do
+      {:ok, new_strategy_state} ->
+        # Check if an action was set
+        action = StrategyContext.get_action()
+        StrategyContext.clear_action()
+
+        updated_result =
+          if action && action in @actions do
+            Result.add_data_point(result, next_index, next_datum, action)
+          else
+            result
+          end
+
+        {updated_result, new_strategy_state}
+
+      {:error, _reason} ->
+        # If strategy fails, continue without taking action
+        {result, strategy_state}
+    end
+  end
+
+  @spec apply_mfa_strategy(
           [{index :: non_neg_integer(), datum :: DataPoint.t()}],
           result :: Result.t(),
           strategy :: module_function_arguments()
         ) :: Result.t()
-  defp apply_strategy([{_index, datum}, {next_index, next_datum}], result, {m, f, _a}) do
+  defp apply_mfa_strategy([{_index, datum}, {next_index, next_datum}], result, {m, f, _a}) do
     action = apply(m, f, [datum, result])
 
     cond do
@@ -115,6 +225,16 @@ defmodule ExPostFacto do
       true ->
         result
     end
+  end
+
+  # Keep the old function name for backward compatibility
+  @spec apply_strategy(
+          [{index :: non_neg_integer(), datum :: DataPoint.t()}],
+          result :: Result.t(),
+          strategy :: module_function_arguments()
+        ) :: Result.t()
+  defp apply_strategy(data_points, result, strategy) do
+    apply_mfa_strategy(data_points, result, strategy)
   end
 
   @spec build_initial_result(
