@@ -314,9 +314,13 @@ defmodule ExPostFacto do
     end)
 
     # Handle special case where we have both close and adj_close
-    # Prefer adj_close if available
+    # Use regular close price for OHLC validation, keep adj_close separate
     case {Map.get(parsed_data, :close), Map.get(parsed_data, :adj_close)} do
-      {_close, adj_close} when not is_nil(adj_close) ->
+      {close, adj_close} when not is_nil(adj_close) and not is_nil(close) ->
+        # Keep both values but use original close for OHLC
+        parsed_data
+      {nil, adj_close} when not is_nil(adj_close) ->
+        # Only have adj_close, use it as close
         Map.put(parsed_data, :close, adj_close)
       _ ->
         parsed_data
