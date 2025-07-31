@@ -47,8 +47,8 @@ defmodule ExPostFacto.StrategyTest do
 
     test "SimpleBuyHold strategy produces expected data points" do
       data = [
-        build_candle(open: 10.0, close: 10.5),
-        build_candle(open: 10.5, close: 11.0)
+        build_candle(open: 10.0, close: 10.5, timestamp: "2023-01-01"),
+        build_candle(open: 10.5, close: 11.0, timestamp: "2023-01-02")
       ]
 
       {:ok, %{result: result}} = ExPostFacto.backtest(data, {SimpleBuyHold, []})

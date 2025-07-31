@@ -31,7 +31,7 @@ defmodule ExPostFactoInputDataTest do
     assert 1.0 == result.open
     assert 1.0 == result.close
     assert 1.0 == result.volume
-    assert "2018-01-01" == result.timestamp
+    assert %DateTime{year: 2018, month: 1, day: 1} = result.timestamp
   end
 
   test "new!/6 raises without required input" do
@@ -141,9 +141,9 @@ defmodule ExPostFactoInputDataTest do
              open: 1.0,
              close: 1.0,
              volume: nil,
-             timestamp: "2018-01-01",
+             timestamp: %DateTime{year: 2018, month: 1, day: 1},
              other: "other"
-           } == result
+           } = result
   end
 
   test "munge/1 handles high low open close volume timestamp other maps" do
@@ -164,9 +164,9 @@ defmodule ExPostFactoInputDataTest do
              open: 1.0,
              close: 1.0,
              volume: 1.0,
-             timestamp: "2018-01-01",
+             timestamp: %DateTime{year: 2018, month: 1, day: 1},
              other: "other"
-           } == result
+           } = result
   end
 
   test "munge/1 handles hlocvt other maps" do
@@ -187,8 +187,8 @@ defmodule ExPostFactoInputDataTest do
              open: 1.0,
              close: 1.0,
              volume: 1.0,
-             timestamp: "2018-01-01",
+             timestamp: %DateTime{year: 2018, month: 1, day: 1},
              other: "other"
-           } == result
+           } = result
   end
 end
