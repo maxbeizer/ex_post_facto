@@ -13,7 +13,8 @@ defmodule ExPostFactoResultTest do
   end
 
   test "new/1 sets a default starting balance of 0.0" do
-    assert %{starting_balance: 0.0} = Result.new()
+    result = Result.new()
+    assert result.starting_balance == 0.0
   end
 
   test "new/1 allows the passing of a starting balance as a KW options" do

@@ -87,7 +87,8 @@ defmodule ExPostFacto.TradeStats.TradePair do
   a percentage of the balance before the trade.
   """
   @spec result_percentage(%__MODULE__{}) :: float()
-  def result_percentage(%{previous_balance: 0.0}), do: 0.0
+  def result_percentage(%{previous_balance: previous_balance}) when previous_balance == 0.0,
+    do: 0.0
 
   def result_percentage(%{
         exit_point: %{datum: %{open: exit_price}},
