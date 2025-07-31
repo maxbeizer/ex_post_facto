@@ -3,7 +3,7 @@ defmodule ExPostFacto.StrategyTest do
   import CandleDataHelper
 
   alias ExPostFacto.ExampleStrategies.{SimpleBuyHold, SmaStrategy}
-  alias ExPostFacto.{Output, Result}
+  alias ExPostFacto.Output
 
   describe "Strategy behaviour support" do
     test "backtest/3 works with SimpleBuyHold strategy" do
