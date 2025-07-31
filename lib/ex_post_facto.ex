@@ -7,6 +7,7 @@ defmodule ExPostFacto do
 
   alias ExPostFacto.{
     DataPoint,
+    Indicators,
     InputData,
     Output,
     Result,
@@ -619,4 +620,22 @@ defmodule ExPostFacto do
       timestamp
     end
   end
+
+  @doc """
+  Provides access to technical indicators.
+
+  This function delegates to ExPostFacto.Indicators module for calculating
+  technical indicators used in trading strategies.
+
+  ## Examples
+
+      iex> prices = [10, 11, 12, 13, 14, 15]
+      iex> ExPostFacto.indicators().sma(prices, 3)
+      [nil, nil, 11.0, 12.0, 13.0, 14.0]
+
+      iex> ExPostFacto.indicators().crossover?([12, 11, 10], [10, 10, 10])
+      false
+  """
+  @spec indicators() :: module()
+  def indicators, do: Indicators
 end
