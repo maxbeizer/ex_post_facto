@@ -67,11 +67,17 @@ defmodule ExPostFacto.Indicators do
     |> Stream.with_index()
     |> Stream.map(fn {_value, index} ->
       if index + 1 >= period do
-        data
-        |> Enum.take(index + 1)
-        |> Enum.take(-period)
-        |> Enum.sum()
-        |> Kernel./(period)
+        period_data =
+          data
+          |> Enum.take(index + 1)
+          |> Enum.take(-period)
+          |> Enum.filter(&(&1 != nil))
+
+        if length(period_data) == period do
+          Enum.sum(period_data) / period
+        else
+          nil
+        end
       else
         nil
       end
@@ -363,20 +369,21 @@ defmodule ExPostFacto.Indicators do
 
   # Calculate True Range for each period
   defp calculate_true_ranges([]), do: []
+  defp calculate_true_ranges([_single]), do: [nil]
 
-  defp calculate_true_ranges([first | rest]) do
-    [nil | calculate_true_ranges_recursive([first | rest], [])]
+  defp calculate_true_ranges([prev | rest]) do
+    calculate_true_ranges_helper(prev, rest, [nil])
   end
 
-  defp calculate_true_ranges_recursive([_last], acc), do: Enum.reverse(acc)
+  defp calculate_true_ranges_helper(_prev, [], acc), do: Enum.reverse(acc)
 
-  defp calculate_true_ranges_recursive([prev, current | rest], acc) do
+  defp calculate_true_ranges_helper(prev, [current | rest], acc) do
     tr1 = current.high - current.low
     tr2 = abs(current.high - prev.close)
     tr3 = abs(current.low - prev.close)
 
     true_range = Enum.max([tr1, tr2, tr3])
-    calculate_true_ranges_recursive([current | rest], [true_range | acc])
+    calculate_true_ranges_helper(current, rest, [true_range | acc])
   end
 
   @doc """
