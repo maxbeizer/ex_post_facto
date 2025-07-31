@@ -76,9 +76,12 @@ defmodule ExPostFacto.Strategy do
           close_buy: 0,
           close_sell: 0,
           crossover?: 2,
+          crossunder?: 2,
           data: 0,
           equity: 0,
-          position: 0
+          position: 0,
+          indicator: 2,
+          indicator: 3
         ]
 
       # Default implementations

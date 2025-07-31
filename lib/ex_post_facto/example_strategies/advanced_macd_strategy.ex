@@ -64,10 +64,10 @@ defmodule ExPostFacto.ExampleStrategies.AdvancedMacdStrategy do
 
     # Update price history
     updated_price_history = [current_price | state.price_history]
-    max_history = max(state.macd_slow, state.bb_period, state.sma_period) + 10
+    max_needed = Enum.max([state.macd_slow, state.bb_period, state.sma_period]) + 10
 
     # Keep only necessary history for performance
-    trimmed_price_history = Enum.take(updated_price_history, max_history)
+    trimmed_price_history = Enum.take(updated_price_history, max_needed)
 
     # Calculate all indicators
     indicators = calculate_indicators(trimmed_price_history, state)
@@ -118,7 +118,7 @@ defmodule ExPostFacto.ExampleStrategies.AdvancedMacdStrategy do
     }
   end
 
-  defp make_trading_decision(indicators, state, current_price) do
+  defp make_trading_decision(indicators, _state, current_price) do
     current_position = position()
 
     cond do
