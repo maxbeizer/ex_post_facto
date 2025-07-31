@@ -11,16 +11,19 @@ This document summarizes the implementation of GitHub Issue #8: "Improved Error 
 A comprehensive validation system with the following features:
 
 #### Exception Types
+
 - **`ValidationError`**: For data validation issues with detailed context and suggestions
 - **`StrategyError`**: For strategy-related errors with specific troubleshooting guidance
 
 #### Validation Functions
+
 - **`validate_data_enhanced/2`**: Comprehensive data validation with quality checks
-- **`validate_strategy/2`**: Strategy validation for both MFA tuples and Strategy behaviours  
+- **`validate_strategy/2`**: Strategy validation for both MFA tuples and Strategy behaviours
 - **`validate_options/1`**: Backtest option validation with type checking
 - **`check_runtime_warnings/2`**: Post-execution analysis and warnings
 
 #### Key Features
+
 - **Detailed Error Messages**: Clear, actionable error descriptions
 - **Context Information**: Relevant data about the error (field names, values, indices)
 - **Suggestions**: Specific recommendations for fixing issues
@@ -30,12 +33,14 @@ A comprehensive validation system with the following features:
 ### 2. Enhanced Backtest Function
 
 #### New `backtest_with_enhanced_validation/3` Function
+
 - Optional enhanced validation (backward compatible - disabled by default)
 - Debug mode with detailed logging
 - Warning system for runtime issues
 - Graceful error handling with detailed feedback
 
 #### Integration Points
+
 - `enhanced_validation: true` option enables the enhanced system
 - `debug: true` option provides detailed logging
 - `warnings: true` option controls warning display (default: enabled)
@@ -43,6 +48,7 @@ A comprehensive validation system with the following features:
 ### 3. Error Formatting and User Experience
 
 #### `format_error/1` Function
+
 - User-friendly error formatting
 - Context-aware messaging (e.g., "Data point 5" instead of "point_index: 5")
 - Structured output with clear sections for message, context, and suggestions
@@ -56,8 +62,8 @@ A comprehensive validation system with the following features:
 {:ok, output} = ExPostFacto.backtest(data, strategy, enhanced_validation: true)
 
 # With debug mode
-{:ok, output} = ExPostFacto.backtest(data, strategy, 
-                                    enhanced_validation: true, 
+{:ok, output} = ExPostFacto.backtest(data, strategy,
+                                    enhanced_validation: true,
                                     debug: true)
 ```
 
@@ -65,14 +71,14 @@ A comprehensive validation system with the following features:
 
 ```elixir
 case ExPostFacto.backtest(invalid_data, strategy, enhanced_validation: true) do
-  {:ok, output} -> 
+  {:ok, output} ->
     # Success
     output
-  
+
   {:error, %ExPostFacto.Validation.ValidationError{} = error} ->
     # Data validation error with detailed feedback
     IO.puts(ExPostFacto.Validation.format_error(error))
-    
+
   {:error, %ExPostFacto.Validation.StrategyError{} = error} ->
     # Strategy error with troubleshooting suggestions
     IO.puts(ExPostFacto.Validation.format_error(error))
@@ -82,12 +88,14 @@ end
 ## Enhanced Error Messages
 
 ### Before (Original System)
+
 ```
 "invalid data"
 "strategy cannot be nil"
 ```
 
 ### After (Enhanced System)
+
 ```
 Missing required OHLC fields in data point 0
 
@@ -121,7 +129,7 @@ The implementation was tested with a comprehensive demo script that verified:
 
 1. ✅ Valid data processing with enhanced validation
 2. ✅ Invalid data detection with detailed error messages
-3. ✅ Invalid strategy detection with troubleshooting suggestions  
+3. ✅ Invalid strategy detection with troubleshooting suggestions
 4. ✅ Debug mode with comprehensive logging
 5. ✅ Warning system for runtime issues
 
