@@ -9,6 +9,8 @@ defmodule ExPostFactoTest do
     Noop
   }
 
+  alias ExPostFacto.{DataPoint, InputData}
+
   alias ExPostFacto.{
     DataPoint,
     InputData,
@@ -50,7 +52,7 @@ defmodule ExPostFactoTest do
   test "backtest/3 returns an output struct with the data" do
     example_data = [build_candle(open: 0.75)]
 
-    {:ok, output} = ExPostFacto.backtest(example_data, {Noop, :noop, []})
+    {:ok, output} = ExPostFacto.backtest(example_data, {Noop, :noop, []}, validate_data: false)
 
     assert example_data == output.data
   end
@@ -59,7 +61,7 @@ defmodule ExPostFactoTest do
     example_data = [%{high: 1.0, low: 0.0, open: 0.25, close: 0.75}]
     mfa = {Noop, :noop, []}
 
-    {:ok, output} = ExPostFacto.backtest(example_data, mfa)
+    {:ok, output} = ExPostFacto.backtest(example_data, mfa, validate_data: false)
 
     assert mfa == output.strategy
   end
@@ -68,24 +70,50 @@ defmodule ExPostFactoTest do
     example_data = [%{high: 1.0, low: 0.0, open: 0.25, close: 0.75}]
     mfa = {Noop, :noop, []}
 
-    {:ok, output} = ExPostFacto.backtest(example_data, mfa)
+    {:ok, output} = ExPostFacto.backtest(example_data, mfa, validate_data: false)
 
     assert %Result{} == output.result
   end
 
   test "backtest/3 collects data points from the applied strategy" do
+    example_data = [%{high: 1.0, low: 0.0, open: 0.25, close: 0.75}]
+    mfa = {BuyBuyBuy, :call, []}
+
     example_data = [
       build_candle(open: 0.75),
       build_candle(open: 0.75)
     ]
 
-    mfa = {BuyBuyBuy, :call, []}
+    {:ok, %{result: result}} = ExPostFacto.backtest(example_data, mfa, validate_data: false)
 
     expected_data_points = [
-      %DataPoint{index: 1, action: :buy, datum: InputData.munge(hd(example_data))}
+      %DataPoint{
+        datum: %InputData{
+          high: 1.0,
+          low: 1.0,
+          open: 0.75,
+          close: 1.0,
+          volume: nil,
+          timestamp: "",
+          other: nil
+        },
+        action: :buy,
+        index: 0
+      },
+      %DataPoint{
+        datum: %InputData{
+          high: 1.0,
+          low: 1.0,
+          open: 0.75,
+          close: 1.0,
+          volume: nil,
+          timestamp: "",
+          other: nil
+        },
+        action: :buy,
+        index: 1
+      }
     ]
-
-    {:ok, %{result: result}} = ExPostFacto.backtest(example_data, mfa)
 
     assert expected_data_points == result.data_points
   end
@@ -95,11 +123,8 @@ defmodule ExPostFactoTest do
       build_candle(open: 0.75)
     ]
 
-    mfa = {BuyBuyBuy, :call, []}
+    {:ok, %{result: result}} = ExPostFacto.backtest(example_data, {BuyBuyBuy, :call, []}, validate_data: false)
 
-    {:ok, %{result: result}} = ExPostFacto.backtest(example_data, mfa)
-
-    # No realized P&L
     assert 0.0 == result.total_profit_and_loss
   end
 
@@ -113,7 +138,7 @@ defmodule ExPostFactoTest do
 
     mfa = {BuyBuyBuy, :call, []}
 
-    {:ok, %{result: result}} = ExPostFacto.backtest(example_data, mfa)
+    {:ok, %{result: result}} = ExPostFacto.backtest(example_data, mfa, validate_data: false)
 
     # 1.75 - 0.75 = 1.0
     assert 1.0 == result.total_profit_and_loss
@@ -129,7 +154,7 @@ defmodule ExPostFactoTest do
 
     mfa = {BuyBuyBuy, :call, []}
 
-    {:ok, %{result: result}} = ExPostFacto.backtest(example_data, mfa)
+    {:ok, %{result: result}} = ExPostFacto.backtest(example_data, mfa, validate_data: false)
 
     # 0.75 - 1.75 = -1.0
     assert -1.0 == result.total_profit_and_loss
@@ -149,7 +174,7 @@ defmodule ExPostFactoTest do
 
     mfa = {BuyBuyBuy, :call, []}
 
-    {:ok, %{result: result}} = ExPostFacto.backtest(example_data, mfa)
+    {:ok, %{result: result}} = ExPostFacto.backtest(example_data, mfa, validate_data: false)
 
     # 2 * (1.75 - 0.75) = 2.0
     assert 2.0 == result.total_profit_and_loss
@@ -169,7 +194,7 @@ defmodule ExPostFactoTest do
 
     mfa = {BuyBuyBuy, :call, []}
 
-    {:ok, %{result: result}} = ExPostFacto.backtest(example_data, mfa)
+    {:ok, %{result: result}} = ExPostFacto.backtest(example_data, mfa, validate_data: false)
 
     # 2 * (1.75 - 0.75) = -2.0
     assert -2.0 == result.total_profit_and_loss
@@ -185,7 +210,7 @@ defmodule ExPostFactoTest do
 
     mfa = {SellSellSell, :call, []}
 
-    {:ok, %{result: result}} = ExPostFacto.backtest(example_data, mfa)
+    {:ok, %{result: result}} = ExPostFacto.backtest(example_data, mfa, validate_data: false)
 
     # 1.75 + 0.75 = 1.0
     assert 1.0 == result.total_profit_and_loss
@@ -201,7 +226,7 @@ defmodule ExPostFactoTest do
 
     mfa = {SellSellSell, :call, []}
 
-    {:ok, %{result: result}} = ExPostFacto.backtest(example_data, mfa)
+    {:ok, %{result: result}} = ExPostFacto.backtest(example_data, mfa, validate_data: false)
 
     # 0.75 - 1.75 = -1.0
     assert -1.0 == result.total_profit_and_loss
@@ -221,7 +246,7 @@ defmodule ExPostFactoTest do
 
     mfa = {SellSellSell, :call, []}
 
-    {:ok, %{result: result}} = ExPostFacto.backtest(example_data, mfa)
+    {:ok, %{result: result}} = ExPostFacto.backtest(example_data, mfa, validate_data: false)
 
     # 2 * (1.75 - 0.75) = 2.0
     assert 2.0 == result.total_profit_and_loss
@@ -241,7 +266,7 @@ defmodule ExPostFactoTest do
 
     mfa = {SellSellSell, :call, []}
 
-    {:ok, %{result: result}} = ExPostFacto.backtest(example_data, mfa)
+    {:ok, %{result: result}} = ExPostFacto.backtest(example_data, mfa, validate_data: false)
 
     # 2 * (1.75 - 0.75) = -2.0
     assert -2.0 == result.total_profit_and_loss
