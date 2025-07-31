@@ -1,7 +1,6 @@
 defmodule ExPostFactoTradeStatsFinancialRatiosTest do
   use ExUnit.Case, async: true
   doctest ExPostFacto.TradeStats.FinancialRatios
-  import CandleDataHelper
 
   alias ExPostFacto.{Result, DataPoint}
   alias ExPostFacto.TradeStats.{FinancialRatios, TradePair}
@@ -15,7 +14,7 @@ defmodule ExPostFactoTradeStatsFinancialRatiosTest do
         trade_pairs: []
       }
 
-      assert 0.0 = FinancialRatios.sharpe_ratio(result)
+      assert FinancialRatios.sharpe_ratio(result) == 0.0
     end
 
     test "calculates sharpe ratio correctly" do
@@ -81,7 +80,7 @@ defmodule ExPostFactoTradeStatsFinancialRatiosTest do
         trade_pairs: []
       }
 
-      assert 0.0 = FinancialRatios.calmar_ratio(result)
+      assert FinancialRatios.calmar_ratio(result) == 0.0
     end
 
     test "calculates calmar ratio correctly" do
@@ -102,17 +101,17 @@ defmodule ExPostFactoTradeStatsFinancialRatiosTest do
   describe "annual_return_percentage/1" do
     test "returns 0.0 when starting balance is 0" do
       result = %Result{starting_balance: 0.0, duration: 365.0}
-      assert 0.0 = FinancialRatios.annual_return_percentage(result)
+      assert FinancialRatios.annual_return_percentage(result) == 0.0
     end
 
     test "returns 0.0 when duration is nil" do
       result = %Result{starting_balance: 1000.0, duration: nil}
-      assert 0.0 = FinancialRatios.annual_return_percentage(result)
+      assert FinancialRatios.annual_return_percentage(result) == 0.0
     end
 
     test "returns 0.0 when duration is 0" do
       result = %Result{starting_balance: 1000.0, duration: 0.0}
-      assert 0.0 = FinancialRatios.annual_return_percentage(result)
+      assert FinancialRatios.annual_return_percentage(result) == 0.0
     end
 
     test "calculates annual return correctly for one year" do
@@ -143,7 +142,7 @@ defmodule ExPostFactoTradeStatsFinancialRatiosTest do
   describe "total_return_percentage/1" do
     test "returns 0.0 when starting balance is 0" do
       result = %Result{starting_balance: 0.0, total_profit_and_loss: 100.0}
-      assert 0.0 = FinancialRatios.total_return_percentage(result)
+      assert FinancialRatios.total_return_percentage(result) == 0.0
     end
 
     test "calculates total return correctly" do
@@ -170,7 +169,7 @@ defmodule ExPostFactoTradeStatsFinancialRatiosTest do
   describe "annual_volatility/1" do
     test "returns 0.0 for empty trade pairs" do
       result = %Result{trade_pairs: [], duration: 365.0}
-      assert 0.0 = FinancialRatios.annual_volatility(result)
+      assert FinancialRatios.annual_volatility(result) == 0.0
     end
 
     test "returns 0.0 for single trade" do
@@ -184,7 +183,7 @@ defmodule ExPostFactoTradeStatsFinancialRatiosTest do
       ]
 
       result = %Result{trade_pairs: trade_pairs, duration: 365.0}
-      assert 0.0 = FinancialRatios.annual_volatility(result)
+      assert FinancialRatios.annual_volatility(result) == 0.0
     end
 
     test "calculates volatility for multiple trades" do

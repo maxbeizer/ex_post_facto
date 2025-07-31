@@ -37,16 +37,18 @@ defmodule ExPostFacto.TradeStats.SystemQuality do
   def system_quality_number(result) do
     trade_results = get_trade_results(result)
 
-    case length(trade_results) do
-      count when count < 2 -> 0.0
-      count ->
-        average_result = Enum.sum(trade_results) / count
-        std_deviation = standard_deviation(trade_results, average_result)
+    if length(trade_results) < 2 do
+      0.0
+    else
+      count = length(trade_results)
+      average_result = Enum.sum(trade_results) / count
+      std_deviation = standard_deviation(trade_results, average_result)
 
-        case std_deviation do
-          0.0 -> 0.0
-          _ -> (average_result / std_deviation) * :math.sqrt(count)
-        end
+      if std_deviation == 0.0 do
+        0.0
+      else
+        (average_result / std_deviation) * :math.sqrt(count)
+      end
     end
   end
 

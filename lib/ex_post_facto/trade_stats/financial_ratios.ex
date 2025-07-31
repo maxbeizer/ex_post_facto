@@ -28,9 +28,10 @@ defmodule ExPostFacto.TradeStats.FinancialRatios do
     annual_return = annual_return_percentage(result)
     annual_volatility = annual_volatility(result)
 
-    case annual_volatility do
-      0.0 -> 0.0
-      _ -> (annual_return - risk_free_rate * 100) / annual_volatility
+    if annual_volatility == 0.0 do
+      0.0
+    else
+      (annual_return - risk_free_rate * 100) / annual_volatility
     end
   end
 
@@ -46,9 +47,10 @@ defmodule ExPostFacto.TradeStats.FinancialRatios do
     annual_return = annual_return_percentage(result)
     downside_volatility = downside_volatility(result)
 
-    case downside_volatility do
-      0.0 -> 0.0
-      _ -> (annual_return - risk_free_rate * 100) / downside_volatility
+    if downside_volatility == 0.0 do
+      0.0
+    else
+      (annual_return - risk_free_rate * 100) / downside_volatility
     end
   end
 
@@ -62,9 +64,10 @@ defmodule ExPostFacto.TradeStats.FinancialRatios do
     annual_return = annual_return_percentage(result)
     max_drawdown = abs(result.max_draw_down_percentage)
 
-    case max_drawdown do
-      0.0 -> 0.0
-      _ -> annual_return / max_drawdown
+    if max_drawdown == 0.0 do
+      0.0
+    else
+      annual_return / max_drawdown
     end
   end
 
@@ -84,9 +87,10 @@ defmodule ExPostFacto.TradeStats.FinancialRatios do
     initial_value = result.starting_balance
     years = result.duration / 365.25
 
-    case years do
-      0.0 -> 0.0
-      _ -> (:math.pow(final_value / initial_value, 1 / years) - 1) * 100
+    if years == 0.0 do
+      0.0
+    else
+      (:math.pow(final_value / initial_value, 1 / years) - 1) * 100
     end
   end
 
@@ -96,7 +100,7 @@ defmodule ExPostFacto.TradeStats.FinancialRatios do
   Total Return = ((Final Value - Initial Value) / Initial Value) * 100
   """
   @spec total_return_percentage(result :: %Result{}) :: float()
-  def total_return_percentage(%{starting_balance: 0.0}), do: 0.0
+  def total_return_percentage(%{starting_balance: starting_balance}) when starting_balance == 0.0, do: 0.0
 
   def total_return_percentage(result) do
     (result.total_profit_and_loss / result.starting_balance) * 100
@@ -126,10 +130,10 @@ defmodule ExPostFacto.TradeStats.FinancialRatios do
         # Annualize assuming trades represent periods (adjust factor as needed)
         # This is a simplified calculation - in practice you'd need more sophisticated
         # time-series analysis
-        trade_frequency = case result.duration do
-          0.0 -> 1.0
-          nil -> 1.0
-          duration -> length(trade_returns) / (duration / 365.25)
+        trade_frequency = if result.duration == 0.0 or is_nil(result.duration) do
+          1.0
+        else
+          length(trade_returns) / (result.duration / 365.25)
         end
 
         volatility * :math.sqrt(trade_frequency)
@@ -159,10 +163,10 @@ defmodule ExPostFacto.TradeStats.FinancialRatios do
         volatility = :math.sqrt(variance)
 
         # Annualize
-        trade_frequency = case result.duration do
-          0.0 -> 1.0
-          nil -> 1.0
-          duration -> length(trade_returns) / (duration / 365.25)
+        trade_frequency = if result.duration == 0.0 or is_nil(result.duration) do
+          1.0
+        else
+          length(trade_returns) / (result.duration / 365.25)
         end
 
         volatility * :math.sqrt(trade_frequency)

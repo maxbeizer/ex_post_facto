@@ -41,11 +41,11 @@ defmodule ExPostFacto.TradeStats.KellyCriterion do
     average_win = ProfitMetrics.average_winning_trade(result)
     average_loss = abs(ProfitMetrics.average_losing_trade(result))
 
-    case {average_win, average_loss, loss_rate} do
-      {0.0, _, _} -> 0.0
-      {_, 0.0, _} -> 0.0
-      {_, _, 0.0} -> 0.0
-      _ ->
+    cond do
+      average_win == 0.0 -> 0.0
+      average_loss == 0.0 -> 0.0
+      loss_rate == 0.0 -> 0.0
+      true ->
         odds_ratio = average_win / average_loss
         (odds_ratio * win_rate - loss_rate) / odds_ratio
     end
@@ -133,31 +133,31 @@ defmodule ExPostFacto.TradeStats.KellyCriterion do
   def risk_of_ruin(result, drawdown_limit \\ 0.20) do
     kelly = kelly_criterion(result)
 
-    case kelly do
-      kelly when kelly <= 0.0 -> 1.0  # Negative edge = certain ruin
-      _ ->
-        # Simplified risk of ruin calculation
-        # In practice, this would use more sophisticated formulas
-        win_rate = result.win_rate / 100
-        average_win_pct = if result.trades_count > 0 do
-          result.best_trade_by_percentage
-        else
-          0.0
-        end
+    if kelly <= 0.0 do
+      1.0  # Negative edge = certain ruin
+    else
+      # Simplified risk of ruin calculation
+      # In practice, this would use more sophisticated formulas
+      win_rate = result.win_rate / 100
+      average_win_pct = if result.trades_count > 0 do
+        result.best_trade_by_percentage
+      else
+        0.0
+      end
 
-        average_loss_pct = abs(result.worst_trade_by_percentage)
+      average_loss_pct = abs(result.worst_trade_by_percentage)
 
-        case {average_win_pct, average_loss_pct} do
-          {0.0, _} -> 1.0
-          {_, 0.0} -> 0.0
-          _ ->
-            # Simplified calculation based on win rate and average outcomes
-            risk_ratio = average_loss_pct / average_win_pct
-            base_risk = :math.pow(risk_ratio, win_rate)
+      cond do
+        average_win_pct == 0.0 -> 1.0
+        average_loss_pct == 0.0 -> 0.0
+        true ->
+          # Simplified calculation based on win rate and average outcomes
+          risk_ratio = average_loss_pct / average_win_pct
+          base_risk = :math.pow(risk_ratio, win_rate)
 
-            # Adjust for drawdown limit
-            min(base_risk / (1 - drawdown_limit), 1.0)
-        end
+          # Adjust for drawdown limit
+          min(base_risk / (1 - drawdown_limit), 1.0)
+      end
     end
   end
 end

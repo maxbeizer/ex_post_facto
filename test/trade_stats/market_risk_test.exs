@@ -1,7 +1,6 @@
 defmodule ExPostFactoTradeStatsMarketRiskTest do
   use ExUnit.Case, async: true
   doctest ExPostFacto.TradeStats.MarketRisk
-  import CandleDataHelper
 
   alias ExPostFacto.{Result, DataPoint}
   alias ExPostFacto.TradeStats.{MarketRisk, TradePair}

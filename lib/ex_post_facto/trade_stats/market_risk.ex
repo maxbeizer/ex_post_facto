@@ -55,20 +55,20 @@ defmodule ExPostFacto.TradeStats.MarketRisk do
   - Beta < 1.0: Less volatile than market
   """
   @spec beta(result :: %Result{}, benchmark_return :: float(), risk_free_rate :: float()) :: float()
-  def beta(result, benchmark_return, _risk_free_rate \\ 0.02) do
+  def beta(result, _benchmark_return, _risk_free_rate \\ 0.02) do
     # Simplified beta calculation when we don't have time-series benchmark data
     # In practice, you'd need daily/periodic returns for both strategy and benchmark
 
-    strategy_return = annual_return(result)
+    _strategy_return = annual_return(result)
     strategy_volatility = annual_volatility(result)
 
     # Estimate market volatility (typical S&P 500 volatility is around 15-20%)
     estimated_market_volatility = 18.0
 
-    case {strategy_volatility, estimated_market_volatility} do
-      {0.0, _} -> 0.0
-      {_, 0.0} -> 0.0
-      _ ->
+    cond do
+      strategy_volatility == 0.0 -> 0.0
+      estimated_market_volatility == 0.0 -> 0.0
+      true ->
         # Simplified calculation: assume some correlation with market
         # This would be more accurate with actual time-series data
         correlation = estimate_market_correlation(result)
@@ -105,7 +105,7 @@ defmodule ExPostFacto.TradeStats.MarketRisk do
   @spec tracking_error(result :: %Result{}, benchmark_return :: float()) :: float()
   def tracking_error(result, benchmark_return) do
     strategy_return = annual_return(result)
-    excess_return = strategy_return - benchmark_return
+    _excess_return = strategy_return - benchmark_return
 
     # Simplified calculation - in practice you'd need periodic returns
     # Estimate based on volatility and correlation
@@ -134,9 +134,10 @@ defmodule ExPostFacto.TradeStats.MarketRisk do
     alpha_value = alpha(result, benchmark_return, risk_free_rate)
     tracking_error_value = tracking_error(result, benchmark_return)
 
-    case tracking_error_value do
-      0.0 -> 0.0
-      _ -> alpha_value / tracking_error_value
+    if tracking_error_value == 0.0 do
+      0.0
+    else
+      alpha_value / tracking_error_value
     end
   end
 
@@ -158,20 +159,21 @@ defmodule ExPostFacto.TradeStats.MarketRisk do
   # Private helper functions
 
   @spec annual_return(result :: %Result{}) :: float()
-  defp annual_return(%{starting_balance: 0.0}), do: 0.0
+  defp annual_return(%{starting_balance: starting_balance}) when starting_balance == 0.0, do: 0.0
 
   defp annual_return(result) do
     final_value = result.starting_balance + result.total_profit_and_loss
     initial_value = result.starting_balance
 
-    case result.duration do
-      nil -> 0.0
-      0.0 -> 0.0
-      duration ->
-        years = duration / 365.25
-        case years do
-          0.0 -> 0.0
-          _ -> (:math.pow(final_value / initial_value, 1 / years) - 1) * 100
+    cond do
+      is_nil(result.duration) -> 0.0
+      result.duration == 0.0 -> 0.0
+      true ->
+        years = result.duration / 365.25
+        if years == 0.0 do
+          0.0
+        else
+          (:math.pow(final_value / initial_value, 1 / years) - 1) * 100
         end
     end
   end
@@ -186,9 +188,10 @@ defmodule ExPostFacto.TradeStats.MarketRisk do
       count when count < 2 -> 0.0
       _ ->
         trade_returns = Enum.map(result.trade_pairs, fn trade_pair ->
-          case trade_pair.previous_balance do
-            0.0 -> 0.0
-            _ -> (trade_pair.balance - trade_pair.previous_balance) / trade_pair.previous_balance * 100
+          if trade_pair.previous_balance == 0.0 do
+            0.0
+          else
+            (trade_pair.balance - trade_pair.previous_balance) / trade_pair.previous_balance * 100
           end
         end)
 
@@ -203,10 +206,10 @@ defmodule ExPostFacto.TradeStats.MarketRisk do
         volatility = :math.sqrt(variance)
 
         # Annualize (simplified)
-        trade_frequency = case result.duration do
-          0.0 -> 1.0
-          nil -> 1.0
-          duration -> length(trade_returns) / (duration / 365.25)
+        trade_frequency = if result.duration == 0.0 or is_nil(result.duration) do
+          1.0
+        else
+          length(trade_returns) / (result.duration / 365.25)
         end
 
         volatility * :math.sqrt(trade_frequency)

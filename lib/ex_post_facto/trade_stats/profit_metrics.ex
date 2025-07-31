@@ -23,13 +23,10 @@ defmodule ExPostFacto.TradeStats.ProfitMetrics do
   def profit_factor(result) do
     {gross_profit, gross_loss} = gross_profit_and_loss(result)
 
-    case abs(gross_loss) do
-      0.0 ->
-        case gross_profit do
-          0.0 -> 0.0
-          _ -> :infinity
-        end
-      _ -> gross_profit / abs(gross_loss)
+    cond do
+      abs(gross_loss) == 0.0 and gross_profit == 0.0 -> 0.0
+      abs(gross_loss) == 0.0 -> :infinity
+      true -> gross_profit / abs(gross_loss)
     end
   end
 
@@ -51,7 +48,7 @@ defmodule ExPostFacto.TradeStats.ProfitMetrics do
   Expectancy % = (Expectancy / Starting Balance) * 100
   """
   @spec expectancy_percentage(result :: %Result{}) :: float()
-  def expectancy_percentage(%{starting_balance: 0.0}), do: 0.0
+  def expectancy_percentage(%{starting_balance: starting_balance}) when starting_balance == 0.0, do: 0.0
 
   def expectancy_percentage(result) do
     expectancy_value = expectancy(result)

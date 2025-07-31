@@ -1,7 +1,6 @@
 defmodule ExPostFactoTradeStatsSystemQualityTest do
   use ExUnit.Case, async: true
   doctest ExPostFacto.TradeStats.SystemQuality
-  import CandleDataHelper
 
   alias ExPostFacto.{Result, DataPoint}
   alias ExPostFacto.TradeStats.{SystemQuality, TradePair}
@@ -9,12 +8,12 @@ defmodule ExPostFactoTradeStatsSystemQualityTest do
   describe "system_quality_number/1" do
     test "returns 0.0 for no trades" do
       result = %Result{trades_count: 0, trade_pairs: []}
-      assert 0.0 = SystemQuality.system_quality_number(result)
+      assert SystemQuality.system_quality_number(result) == 0.0
     end
 
     test "returns 0.0 for single trade" do
       result = %Result{trades_count: 1, trade_pairs: []}
-      assert 0.0 = SystemQuality.system_quality_number(result)
+      assert SystemQuality.system_quality_number(result) == 0.0
     end
 
     test "returns 0.0 when standard deviation is 0" do
@@ -35,7 +34,7 @@ defmodule ExPostFactoTradeStatsSystemQualityTest do
       ]
 
       result = %Result{trades_count: 2, trade_pairs: trade_pairs}
-      assert 0.0 = SystemQuality.system_quality_number(result)
+      assert SystemQuality.system_quality_number(result) == 0.0
     end
 
     test "calculates SQN correctly for mixed results" do
@@ -104,7 +103,7 @@ defmodule ExPostFactoTradeStatsSystemQualityTest do
   describe "confidence_level/1" do
     test "returns 0.0 for insufficient trades" do
       result = %Result{trades_count: 20}
-      assert 0.0 = SystemQuality.confidence_level(result)
+      assert SystemQuality.confidence_level(result) == 0.0
     end
 
     test "returns confidence level for adequate trades" do

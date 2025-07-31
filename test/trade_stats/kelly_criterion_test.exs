@@ -1,7 +1,6 @@
 defmodule ExPostFactoTradeStatsKellyCriterionTest do
   use ExUnit.Case, async: true
   doctest ExPostFacto.TradeStats.KellyCriterion
-  import CandleDataHelper
 
   alias ExPostFacto.{Result, DataPoint}
   alias ExPostFacto.TradeStats.{KellyCriterion, TradePair}
@@ -9,7 +8,7 @@ defmodule ExPostFactoTradeStatsKellyCriterionTest do
   describe "kelly_criterion/1" do
     test "returns 0.0 for no trades" do
       result = %Result{trades_count: 0, win_rate: 0.0, trade_pairs: []}
-      assert 0.0 = KellyCriterion.kelly_criterion(result)
+      assert KellyCriterion.kelly_criterion(result) == 0.0
     end
 
     test "returns 0.0 when no winning trades" do
@@ -19,7 +18,7 @@ defmodule ExPostFactoTradeStatsKellyCriterionTest do
         trade_pairs: []
       }
 
-      assert 0.0 = KellyCriterion.kelly_criterion(result)
+      assert KellyCriterion.kelly_criterion(result) == 0.0
     end
 
     test "returns 0.0 when no losing trades" do
@@ -29,7 +28,7 @@ defmodule ExPostFactoTradeStatsKellyCriterionTest do
         trade_pairs: []
       }
 
-      assert 0.0 = KellyCriterion.kelly_criterion(result)
+      assert KellyCriterion.kelly_criterion(result) == 0.0
     end
 
     test "calculates Kelly criterion correctly for profitable strategy" do
@@ -120,8 +119,7 @@ defmodule ExPostFactoTradeStatsKellyCriterionTest do
         trade_pairs: trade_pairs
       }
 
-      # Mock the kelly_criterion to return a known value
-      full_kelly = 0.4
+      # Test fractional kelly calculation
       fractional = KellyCriterion.fractional_kelly(result, 0.5)
 
       # Should be half of whatever kelly_criterion returns
@@ -172,7 +170,7 @@ defmodule ExPostFactoTradeStatsKellyCriterionTest do
       position_size = KellyCriterion.optimal_position_size(result, current_capital, 0.25)
 
       # Kelly is 0.0 for this result, so position size should be 0.0
-      assert 0.0 = position_size
+      assert position_size == 0.0
     end
 
     test "uses default fraction" do
@@ -193,7 +191,7 @@ defmodule ExPostFactoTradeStatsKellyCriterionTest do
   describe "geometric_mean_return/1" do
     test "returns 0.0 for no trades" do
       result = %Result{trades_count: 0, trade_pairs: []}
-      assert 0.0 = KellyCriterion.geometric_mean_return(result)
+      assert KellyCriterion.geometric_mean_return(result) == 0.0
     end
 
     test "calculates geometric mean correctly" do

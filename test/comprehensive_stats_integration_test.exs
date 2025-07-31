@@ -1,8 +1,7 @@
 defmodule ExPostFactoComprehensiveStatsIntegrationTest do
   use ExUnit.Case, async: true
-  import CandleDataHelper
 
-  alias ExPostFacto.{Result, InputData}
+  alias ExPostFacto.Result
 
   describe "comprehensive statistics integration" do
     test "compiles all statistics correctly for a complete backtest result" do
@@ -163,7 +162,7 @@ defmodule ExPostFactoComprehensiveStatsIntegrationTest do
 
   # Simple test strategies
 
-  def simple_strategy(%{close: close}, %{data_points: data_points}) do
+  def simple_strategy(%{close: _close}, %{data_points: data_points}) do
     case length(data_points) do
       0 -> :buy  # Buy on first data point
       1 -> :close_buy  # Sell on second data point
@@ -175,7 +174,7 @@ defmodule ExPostFactoComprehensiveStatsIntegrationTest do
     :noop
   end
 
-  def buy_high_sell_higher_strategy(%{close: close}, %{data_points: data_points, is_position_open: is_open}) do
+  def buy_high_sell_higher_strategy(%{close: close}, %{data_points: _data_points, is_position_open: is_open}) do
     cond do
       !is_open && close > 108.0 -> :buy     # Buy when price is high
       is_open && close > 114.0 -> :close_buy # Sell when price is even higher

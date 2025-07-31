@@ -1,7 +1,6 @@
 defmodule ExPostFactoTradeStatsProfitMetricsTest do
   use ExUnit.Case, async: true
   doctest ExPostFacto.TradeStats.ProfitMetrics
-  import CandleDataHelper
 
   alias ExPostFacto.{Result, DataPoint}
   alias ExPostFacto.TradeStats.{ProfitMetrics, TradePair}
@@ -9,7 +8,7 @@ defmodule ExPostFactoTradeStatsProfitMetricsTest do
   describe "profit_factor/1" do
     test "returns 0.0 when no trades" do
       result = %Result{trade_pairs: []}
-      assert 0.0 = ProfitMetrics.profit_factor(result)
+      assert ProfitMetrics.profit_factor(result) == 0.0
     end
 
     test "returns infinity when no losses" do
@@ -55,7 +54,7 @@ defmodule ExPostFactoTradeStatsProfitMetricsTest do
   describe "expectancy/1" do
     test "returns 0.0 when no trades" do
       result = %Result{trades_count: 0, total_profit_and_loss: 0.0}
-      assert 0.0 = ProfitMetrics.expectancy(result)
+      assert ProfitMetrics.expectancy(result) == 0.0
     end
 
     test "calculates expectancy correctly" do
@@ -77,7 +76,7 @@ defmodule ExPostFactoTradeStatsProfitMetricsTest do
         total_profit_and_loss: 100.0
       }
 
-      assert 0.0 = ProfitMetrics.expectancy_percentage(result)
+      assert ProfitMetrics.expectancy_percentage(result) == 0.0
     end
 
     test "calculates expectancy percentage correctly" do
@@ -95,7 +94,7 @@ defmodule ExPostFactoTradeStatsProfitMetricsTest do
   describe "gross_profit_and_loss/1" do
     test "returns {0.0, 0.0} for empty trade pairs" do
       result = %Result{trade_pairs: []}
-      assert {0.0, 0.0} = ProfitMetrics.gross_profit_and_loss(result)
+      assert ProfitMetrics.gross_profit_and_loss(result) == {0.0, 0.0}
     end
 
     test "calculates gross profit and loss correctly" do
@@ -144,7 +143,7 @@ defmodule ExPostFactoTradeStatsProfitMetricsTest do
       ]
 
       result = %Result{trade_pairs: trade_pairs}
-      assert 0.0 = ProfitMetrics.average_winning_trade(result)
+      assert ProfitMetrics.average_winning_trade(result) == 0.0
     end
 
     test "calculates average winning trade correctly" do
@@ -184,7 +183,7 @@ defmodule ExPostFactoTradeStatsProfitMetricsTest do
       ]
 
       result = %Result{trade_pairs: trade_pairs}
-      assert 0.0 = ProfitMetrics.average_losing_trade(result)
+      assert ProfitMetrics.average_losing_trade(result) == 0.0
     end
 
     test "calculates average losing trade correctly" do
@@ -214,7 +213,7 @@ defmodule ExPostFactoTradeStatsProfitMetricsTest do
   describe "largest_winning_trade/1" do
     test "returns 0.0 for no winning trades" do
       result = %Result{trade_pairs: []}
-      assert 0.0 = ProfitMetrics.largest_winning_trade(result)
+      assert ProfitMetrics.largest_winning_trade(result) == 0.0
     end
 
     test "finds largest winning trade correctly" do
@@ -244,7 +243,7 @@ defmodule ExPostFactoTradeStatsProfitMetricsTest do
   describe "largest_losing_trade/1" do
     test "returns 0.0 for no losing trades" do
       result = %Result{trade_pairs: []}
-      assert 0.0 = ProfitMetrics.largest_losing_trade(result)
+      assert ProfitMetrics.largest_losing_trade(result) == 0.0
     end
 
     test "finds largest losing trade correctly" do
