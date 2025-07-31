@@ -38,10 +38,10 @@ defmodule ExPostFacto.OptimizerTest do
       assert is_list(result.best_params)
       assert is_number(result.best_score)
       assert %Output{} = result.best_output
-      
+
       # Should have tested all combinations (3 x 3 = 9)
       assert length(result.all_results) == 9
-      
+
       # Best params should be within the specified ranges
       fast_period = Keyword.get(result.best_params, :fast_period)
       slow_period = Keyword.get(result.best_params, :slow_period)
@@ -52,9 +52,9 @@ defmodule ExPostFacto.OptimizerTest do
     test "handles empty parameter ranges" do
       data = generate_simple_data(10)
       param_ranges = []
-      
+
       {:ok, result} = Optimizer.grid_search(data, SmaStrategy, param_ranges, [])
-      
+
       # Should return result with default parameters
       assert length(result.all_results) == 1
       assert result.best_params == []
@@ -62,31 +62,36 @@ defmodule ExPostFacto.OptimizerTest do
 
     test "returns error for too many parameter combinations" do
       data = generate_simple_data(10)
-      
+
       # Large parameter ranges that exceed max_combinations
       param_ranges = [
         fast_period: 1..50,
         slow_period: 51..100
       ]
-      
-      opts = [max_combinations: 100]  # 50 * 50 = 2500 > 100
-      
+
+      # 50 * 50 = 2500 > 100
+      opts = [max_combinations: 100]
+
       {:error, message} = Optimizer.grid_search(data, SmaStrategy, param_ranges, opts)
       assert String.contains?(message, "Too many parameter combinations")
     end
 
     test "handles strategy initialization errors gracefully" do
       data = generate_simple_data(10)
-      
+
       # Invalid parameters that will cause strategy init to fail
       param_ranges = [
-        fast_period: [20],  # fast >= slow will cause error
+        # fast >= slow will cause error
+        fast_period: [20],
         slow_period: [10]
       ]
-      
+
       {:ok, result} = Optimizer.grid_search(data, SmaStrategy, param_ranges, [])
-      
+
       # Should handle failed backtests gracefully
+      assert result.best_params == nil
+      assert result.best_score == nil
+      assert result.best_output == nil
       assert length(result.all_results) == 1
       failed_result = hd(result.all_results)
       assert failed_result.score == nil
@@ -96,9 +101,9 @@ defmodule ExPostFacto.OptimizerTest do
     test "supports different optimization metrics" do
       data = generate_trending_data(30, 10.0, 0.05)
       param_ranges = [fast_period: [5], slow_period: [15]]
-      
+
       metrics = [:sharpe_ratio, :total_return_pct, :cagr_pct, :profit_factor, :win_rate]
-      
+
       for metric <- metrics do
         {:ok, result} = Optimizer.grid_search(data, SmaStrategy, param_ranges, maximize: metric)
         assert result.metric == metric
@@ -130,10 +135,10 @@ defmodule ExPostFacto.OptimizerTest do
       assert is_list(result.best_params)
       assert is_number(result.best_score)
       assert %Output{} = result.best_output
-      
+
       # Should have tested the specified number of samples
       assert length(result.all_results) == 10
-      
+
       # Best params should be within the specified ranges
       fast_period = Keyword.get(result.best_params, :fast_period)
       slow_period = Keyword.get(result.best_params, :slow_period)
@@ -143,18 +148,18 @@ defmodule ExPostFacto.OptimizerTest do
 
     test "handles list-based parameter ranges" do
       data = generate_simple_data(20)
-      
+
       param_ranges = [
         fast_period: [3, 5, 7, 9],
         slow_period: [15, 20, 25]
       ]
-      
+
       opts = [samples: 5]
-      
+
       {:ok, result} = Optimizer.random_search(data, SmaStrategy, param_ranges, opts)
-      
+
       assert length(result.all_results) == 5
-      
+
       # Check that selected parameters are from the provided lists
       for %{params: params} <- result.all_results do
         fast_period = Keyword.get(params, :fast_period)
@@ -166,14 +171,16 @@ defmodule ExPostFacto.OptimizerTest do
 
     test "handles single-value parameter ranges" do
       data = generate_simple_data(15)
-      
+
       param_ranges = [
-        fast_period: 5,  # Single value, not a range
-        slow_period: [20]  # List with single value
+        # Single value, not a range
+        fast_period: 5,
+        # List with single value
+        slow_period: [20]
       ]
-      
+
       {:ok, result} = Optimizer.random_search(data, SmaStrategy, param_ranges, samples: 3)
-      
+
       # All results should have the same parameters
       for %{params: params} <- result.all_results do
         assert Keyword.get(params, :fast_period) == 5
@@ -197,12 +204,12 @@ defmodule ExPostFacto.OptimizerTest do
       # Add some randomness
       random_factor = (:rand.uniform() - 0.5) * 0.1
       price = base_price + random_factor
-      
+
       open = price
       close = price + trend * 0.5 + random_factor * 0.5
       high = max(open, close) + abs(random_factor)
       low = min(open, close) - abs(random_factor)
-      
+
       build_candle(open: open, close: close, high: high, low: low)
     end)
   end
@@ -231,7 +238,7 @@ defmodule ExPostFacto.OptimizerTest do
       assert heatmap.y_param == :slow_period
       assert heatmap.x_values == [5, 6, 7]
       assert heatmap.y_values == [15, 16, 17]
-      
+
       # Should have 3x3 score matrix
       assert length(heatmap.scores) == 3
       assert Enum.all?(heatmap.scores, fn row -> length(row) == 3 end)
@@ -239,7 +246,9 @@ defmodule ExPostFacto.OptimizerTest do
 
     test "returns error for invalid parameters" do
       data = generate_simple_data(10)
-      {:ok, result} = Optimizer.grid_search(data, SmaStrategy, [fast_period: [5], slow_period: [15]], [])
+
+      {:ok, result} =
+        Optimizer.grid_search(data, SmaStrategy, [fast_period: [5], slow_period: [15]], [])
 
       # Same parameter for both axes
       {:error, message} = Optimizer.heatmap(result, :fast_period, :fast_period)
@@ -292,7 +301,8 @@ defmodule ExPostFacto.OptimizerTest do
     end
 
     test "returns error for insufficient data" do
-      data = generate_simple_data(50)  # Not enough for default windows
+      # Not enough for default windows
+      data = generate_simple_data(50)
 
       {:error, message} = Optimizer.walk_forward(data, SmaStrategy, [fast_period: [5]], [])
       assert String.contains?(message, "Insufficient data")
@@ -307,10 +317,12 @@ defmodule ExPostFacto.OptimizerTest do
         step_size: 10
       ]
 
-      {:ok, result} = Optimizer.walk_forward(data, SmaStrategy, [fast_period: [5], slow_period: [15]], opts)
+      {:ok, result} =
+        Optimizer.walk_forward(data, SmaStrategy, [fast_period: [5], slow_period: [15]], opts)
 
       # Should have windows based on the step size
-      expected_windows = (100 - 30) ÷ 10 + 1  # (data_length - window_size) / step_size + 1
+      # (data_length - window_size) / step_size + 1
+      expected_windows = (100 - 30) / 10 + 1
       assert length(result.windows) == expected_windows
     end
   end

@@ -153,16 +153,20 @@ defmodule ExPostFacto do
         ) :: {:ok, map()} | {:error, String.t()}
   def optimize(data, strategy_module, param_ranges, opts \\ []) do
     method = Keyword.get(opts, :method, :grid_search)
-    
+
     case method do
       :grid_search ->
         Optimizer.grid_search(data, strategy_module, param_ranges, opts)
+
       :random_search ->
         Optimizer.random_search(data, strategy_module, param_ranges, opts)
+
       :walk_forward ->
         Optimizer.walk_forward(data, strategy_module, param_ranges, opts)
+
       _ ->
-        {:error, "Unsupported optimization method: #{method}. Supported methods: :grid_search, :random_search, :walk_forward"}
+        {:error,
+         "Unsupported optimization method: #{method}. Supported methods: :grid_search, :random_search, :walk_forward"}
     end
   end
 
