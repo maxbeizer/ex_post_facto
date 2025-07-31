@@ -11,7 +11,8 @@ defmodule ExPostFacto do
     InputData,
     Output,
     Result,
-    StrategyContext
+    StrategyContext,
+    Validation
   }
 
   @actions [:buy, :sell, :close_buy, :close_sell]
@@ -20,14 +21,15 @@ defmodule ExPostFacto do
   @type strategy_module :: {module :: atom(), opts :: keyword()}
   @type strategy :: module_function_arguments() | strategy_module()
 
+  # Re-export enhanced validation exceptions for better error handling
   defmodule DataValidationError do
-    @moduledoc false
+    @moduledoc "Legacy validation error - consider using ExPostFacto.Validation.ValidationError"
     @doc false
     defexception message: "invalid data"
   end
 
   defmodule BacktestError do
-    @moduledoc false
+    @moduledoc "General backtest error - consider using specific validation errors"
     @doc false
     defexception message: "unable to run backtest"
   end
@@ -148,6 +150,183 @@ defmodule ExPostFacto do
   end
 
   def backtest(data, strategy, options) when is_list(data) do
+    # Use enhanced validation if enabled
+    enhanced_validation = Keyword.get(options, :enhanced_validation, false)
+
+    if enhanced_validation do
+      backtest_with_enhanced_validation(data, strategy, options)
+    else
+      backtest_legacy(data, strategy, options)
+    end
+  end
+
+  @doc """
+  Enhanced backtest with comprehensive validation and error handling.
+
+  This version provides detailed error messages, warnings, and debugging support
+  to improve the developer experience and catch issues early.
+
+  ## Options
+
+  - `:enhanced_validation` - Enable enhanced validation (default: false for backward compatibility)
+  - `:debug` - Enable debug mode for detailed logging
+  - `:strict` - Enable strict validation mode
+  - `:warnings` - Show runtime warnings (default: true)
+
+  ## Examples
+
+      # Enable enhanced validation
+      {:ok, output} = ExPostFacto.backtest(data, strategy, enhanced_validation: true)
+
+      # Enable debug mode
+      {:ok, output} = ExPostFacto.backtest(data, strategy, enhanced_validation: true, debug: true)
+
+      # Handle detailed errors
+      case ExPostFacto.backtest(invalid_data, strategy, enhanced_validation: true) do
+        {:ok, output} -> output
+        {:error, %ExPostFacto.Validation.ValidationError{} = error} ->
+          IO.puts(ExPostFacto.Validation.format_error(error))
+          :error
+        {:error, error_message} ->
+          IO.puts("Error: " <> error_message)
+          :error
+      end
+  """
+  @spec backtest_with_enhanced_validation([map()], strategy(), keyword()) ::
+          {:ok, Output.t()} | {:error, String.t() | Validation.ValidationError.t() | Validation.StrategyError.t()}
+  def backtest_with_enhanced_validation(data, strategy, options) do
+    debug_mode = Keyword.get(options, :debug, false)
+
+    if debug_mode do
+      IO.puts("[DEBUG] Starting enhanced backtest with #{length(data)} data points")
+    end
+
+    # Enhanced validation pipeline
+    with {:ok, validated_options} <- validate_options_enhanced(options),
+         validation_result <- validate_strategy_enhanced(strategy, options),
+         :ok <- handle_validation_result(validation_result, debug_mode),
+         data_validation_result <- validate_data_enhanced(data, options),
+         :ok <- handle_validation_result(data_validation_result, debug_mode),
+         {:ok, processed_data} <- process_data_enhanced(data, options),
+         {:ok, output} <- execute_backtest_enhanced(processed_data, strategy, validated_options) do
+
+      # Check for runtime warnings
+      warnings_enabled = Keyword.get(options, :warnings, true)
+      case check_runtime_warnings(output.result, options) do
+        {:warning, message} when warnings_enabled ->
+          if debug_mode, do: IO.puts("[WARNING] #{message}")
+          {:ok, output}
+        _ ->
+          {:ok, output}
+      end
+    else
+      {:error, %Validation.ValidationError{} = error} ->
+        if debug_mode, do: IO.puts("[ERROR] #{Validation.format_error(error)}")
+        {:error, error}
+
+      {:error, %Validation.StrategyError{} = error} ->
+        if debug_mode, do: IO.puts("[ERROR] #{Validation.format_error(error)}")
+        {:error, error}
+
+      {:error, reason} ->
+        if debug_mode, do: IO.puts("[ERROR] #{reason}")
+        {:error, reason}
+    end
+  end
+
+  # Enhanced validation helper functions
+
+  defp handle_validation_result(:ok, _debug_mode), do: :ok
+  defp handle_validation_result({:warning, message}, debug_mode) do
+    if debug_mode, do: IO.puts("[WARNING] #{message}")
+    :ok
+  end
+  defp handle_validation_result({:error, error}, _debug_mode), do: {:error, error}
+
+  defp validate_options_enhanced(options) do
+    case Validation.validate_options(options) do
+      :ok -> {:ok, options}
+      {:error, error} -> {:error, error}
+      {:warning, _message} -> {:ok, options}  # Continue with warnings
+    end
+  end
+
+  defp validate_strategy_enhanced(strategy, options) do
+    Validation.validate_strategy(strategy, options)
+  end
+
+  defp validate_data_enhanced(data, options) do
+    Validation.validate_data(data, options)
+  end
+
+  defp process_data_enhanced(data, options) do
+    # Apply data processing pipeline with enhanced error handling
+    clean_enabled = Keyword.get(options, :clean_data, true)
+    debug_mode = Keyword.get(options, :debug, false)
+
+    with {:ok, cleaned_data} <- maybe_clean_data(data, Keyword.put(options, :clean_data, clean_enabled)) do
+      if debug_mode do
+        cleaned_count = length(cleaned_data)
+        original_count = length(data)
+        if cleaned_count != original_count do
+          IO.puts("[DEBUG] Data cleaning: #{original_count} -> #{cleaned_count} data points")
+        end
+      end
+
+      {:ok, cleaned_data}
+    else
+      {:error, reason} ->
+        {:error, Validation.ValidationError.exception(
+          message: "Data processing failed: #{reason}",
+          context: %{data_count: length(data), clean_enabled: clean_enabled}
+        )}
+    end
+  end
+
+  defp execute_backtest_enhanced(data, strategy, options) do
+    debug_mode = Keyword.get(options, :debug, false)
+
+    if debug_mode do
+      IO.puts("[DEBUG] Executing backtest with #{length(data)} processed data points")
+    end
+
+    # Use the legacy backtest logic but with enhanced error formatting
+    case backtest_legacy(data, strategy, options) do
+      {:ok, output} -> {:ok, output}
+      {:error, reason} when is_binary(reason) ->
+        {:error, Validation.ValidationError.exception(
+          message: "Backtest execution failed: #{reason}",
+          context: %{strategy: strategy, data_count: length(data)}
+        )}
+      {:error, error} -> {:error, error}
+    end
+  end
+
+  defp check_runtime_warnings(result, options) do
+    debug_mode = Keyword.get(options, :debug, false)
+
+    cond do
+      result.trades_count == 0 ->
+        warning = "No trades were executed - strategy may be too conservative or data insufficient"
+        if debug_mode, do: IO.puts("[WARNING] #{warning}")
+        {:warning, warning}
+
+      result.total_profit_and_loss < 0 and result.trades_count > 5 ->
+        warning = "Strategy shows consistent losses over #{result.trades_count} trades"
+        if debug_mode, do: IO.puts("[WARNING] #{warning}")
+        {:warning, warning}
+
+      result.max_draw_down_percentage > 50.0 ->
+        warning = "High maximum drawdown of #{Float.round(result.max_draw_down_percentage, 2)}% detected"
+        if debug_mode, do: IO.puts("[WARNING] #{warning}")
+        {:warning, warning}
+
+      true -> :ok
+    end
+  end
+
+  # Legacy backtest function (existing behavior)
+  defp backtest_legacy(data, strategy, options) do
     # Clean data first if cleaning is enabled (default: true, but disabled if validation is disabled)
     clean_enabled = Keyword.get(options, :clean_data, Keyword.get(options, :validate_data, true))
     validate_enabled = Keyword.get(options, :validate_data, true)
