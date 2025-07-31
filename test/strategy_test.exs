@@ -2,7 +2,7 @@ defmodule ExPostFacto.StrategyTest do
   use ExUnit.Case
   import CandleDataHelper
 
-  alias ExPostFacto.ExampleStrategies.{SimpleBuyHold, SmaStrategy}
+  alias ExPostFacto.ExampleStrategies.{SimpleBuyHold, SmaStrategy, AdvancedMacdStrategy}
   alias ExPostFacto.Output
 
   describe "Strategy behaviour support" do
@@ -66,6 +66,39 @@ defmodule ExPostFacto.StrategyTest do
                ExPostFacto.backtest(data, {SmaStrategy, [fast_period: 20, slow_period: 10]})
 
       assert String.contains?(message, "fast_period must be less than slow_period")
+    end
+
+    test "AdvancedMacdStrategy initializes correctly" do
+      data =
+        1..100
+        |> Enum.map(fn i ->
+          price = 10.0 + i * 0.1 + :rand.uniform() * 0.5
+          build_candle(open: price, close: price + 0.02, high: price + 0.05, low: price - 0.03)
+        end)
+
+      assert {:ok, %Output{}} =
+               ExPostFacto.backtest(data, {AdvancedMacdStrategy, []}, starting_balance: 1000.0)
+    end
+
+    test "AdvancedMacdStrategy accepts custom parameters" do
+      data =
+        1..50
+        |> Enum.map(fn i ->
+          price = 20.0 + i * 0.2
+          build_candle(open: price, close: price + 0.1)
+        end)
+
+      custom_opts = [
+        macd_fast: 8,
+        macd_slow: 21,
+        rsi_period: 10,
+        bb_period: 15
+      ]
+
+      assert {:ok, %Output{}} =
+               ExPostFacto.backtest(data, {AdvancedMacdStrategy, custom_opts},
+                 starting_balance: 1000.0
+               )
     end
   end
 end

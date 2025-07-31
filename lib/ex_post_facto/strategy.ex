@@ -121,21 +121,25 @@ defmodule ExPostFacto.Strategy do
   Check if the first series crosses above the second series.
 
   Returns true if there was a crossover on the current data point.
+  Delegates to ExPostFacto.Indicators for comprehensive crossover detection.
   """
   def crossover?(series1, series2) when is_list(series1) and is_list(series2) do
-    case {series1, series2} do
-      {[current1, prev1 | _], [current2, prev2 | _]} ->
-        prev1 <= prev2 and current1 > current2
-
-      _ ->
-        false
-    end
+    ExPostFacto.Indicators.crossover?(series1, series2)
   end
 
   def crossover?(val1, val2) when is_number(val1) and is_number(val2) do
     # For single values, we can't determine crossover without history
     # This would need to be enhanced with historical data tracking
     false
+  end
+
+  @doc """
+  Check if the first series crosses below the second series.
+
+  Returns true if there was a crossunder on the current data point.
+  """
+  def crossunder?(series1, series2) when is_list(series1) and is_list(series2) do
+    ExPostFacto.Indicators.crossunder?(series1, series2)
   end
 
   @doc """
@@ -160,15 +164,81 @@ defmodule ExPostFacto.Strategy do
   end
 
   @doc """
-  Create a technical indicator (placeholder for future implementation).
+  Create a technical indicator using the ExPostFacto.Indicators module.
 
-  This is a simplified version - a full implementation would integrate
-  with a technical analysis library.
+  This function provides a convenient interface for calculating technical indicators
+  within strategies. It delegates to the comprehensive indicator framework.
+
+  ## Parameters
+
+  - `indicator_type` - Atom representing the indicator type (:sma, :ema, :rsi, etc.)
+  - `data` - List or stream of numeric values
+  - `params` - Parameters for the indicator (period, etc.)
+
+  ## Examples
+
+      # Simple Moving Average
+      sma_values = indicator(:sma, price_data, 20)
+
+      # Exponential Moving Average  
+      ema_values = indicator(:ema, price_data, 12)
+
+      # RSI
+      rsi_values = indicator(:rsi, price_data, 14)
+
+      # MACD (returns tuple)
+      {macd, signal, histogram} = indicator(:macd, price_data, {12, 26, 9})
+
+      # Bollinger Bands (returns tuple)
+      {upper, middle, lower} = indicator(:bollinger_bands, price_data, {20, 2})
+
   """
+  def indicator(indicator_type, data, params \\ nil)
+
+  def indicator(:sma, data, period) when is_integer(period) do
+    ExPostFacto.Indicators.sma(data, period)
+  end
+
+  def indicator(:ema, data, period) when is_integer(period) do
+    ExPostFacto.Indicators.ema(data, period)
+  end
+
+  def indicator(:rsi, data, period) when is_integer(period) do
+    ExPostFacto.Indicators.rsi(data, period)
+  end
+
+  def indicator(:rsi, data, nil) do
+    ExPostFacto.Indicators.rsi(data, 14)
+  end
+
+  def indicator(:macd, data, {fast, slow, signal}) do
+    ExPostFacto.Indicators.macd(data, fast, slow, signal)
+  end
+
+  def indicator(:macd, data, nil) do
+    ExPostFacto.Indicators.macd(data)
+  end
+
+  def indicator(:bollinger_bands, data, {period, std_dev}) do
+    ExPostFacto.Indicators.bollinger_bands(data, period, std_dev)
+  end
+
+  def indicator(:bollinger_bands, data, nil) do
+    ExPostFacto.Indicators.bollinger_bands(data)
+  end
+
+  def indicator(:atr, data, period) when is_integer(period) do
+    ExPostFacto.Indicators.atr(data, period)
+  end
+
+  def indicator(:atr, data, nil) do
+    ExPostFacto.Indicators.atr(data)
+  end
+
+  # Legacy function support for backward compatibility
   def indicator(func, data, period)
       when is_function(func) and is_list(data) and is_integer(period) do
-    # Simplified indicator calculation
-    # In a real implementation, this would use a proper TA library
+    # Simplified indicator calculation for backward compatibility
     if length(data) >= period do
       data
       |> Enum.take(period)
