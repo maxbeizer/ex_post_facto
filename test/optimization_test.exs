@@ -1,7 +1,7 @@
 defmodule ExPostFacto.OptimizationTest do
   @moduledoc """
   Tests for optimization functionality that require strategy behaviour modules.
-  
+
   These tests are run sequentially (async: false) to avoid conflicts with
   the StrategyContext GenServer singleton.
   """

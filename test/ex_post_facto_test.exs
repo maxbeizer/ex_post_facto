@@ -281,13 +281,16 @@ defmodule ExPostFactoTest do
     end
 
     test "uses default optimization settings when not specified" do
-      data = generate_trending_test_data(5)  # Small dataset
+      # Small dataset
+      data = generate_trending_test_data(5)
 
       # Use a simple test that doesn't depend on complex parameter optimization
-      result = ExPostFacto.optimize(
+      result =
+        ExPostFacto.optimize(
           data,
           BuyBuyBuy,
-          []  # No parameters for BuyBuyBuy
+          # No parameters for BuyBuyBuy
+          []
         )
 
       # Should return success and have the default method and metric
@@ -295,6 +298,7 @@ defmodule ExPostFactoTest do
         {:ok, opt_result} ->
           assert opt_result.method == :grid_search
           assert opt_result.metric == :sharpe_ratio
+
         {:error, _} ->
           # If it fails due to no parameters, that's also acceptable for this test
           assert true
