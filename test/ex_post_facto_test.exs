@@ -264,4 +264,146 @@ defmodule ExPostFactoTest do
     # 2 * (1.75 - 0.75) = -2.0
     assert -2.0 == result.total_profit_and_loss
   end
+
+  describe "optimize/4" do
+    test "performs grid search optimization successfully" do
+      data = generate_trending_test_data(30)
+
+      {:ok, result} =
+        ExPostFacto.optimize(
+          data,
+          ExPostFacto.ExampleStrategies.SmaStrategy,
+          [fast_period: 5..7, slow_period: 15..17],
+          maximize: :total_return_pct
+        )
+
+      assert result.method == :grid_search
+      assert result.metric == :total_return_pct
+      assert is_list(result.best_params)
+      assert is_number(result.best_score)
+      # 3 x 3 combinations
+      assert length(result.all_results) == 9
+    end
+
+    test "performs random search optimization successfully" do
+      data = generate_trending_test_data(25)
+
+      {:ok, result} =
+        ExPostFacto.optimize(
+          data,
+          ExPostFacto.ExampleStrategies.SmaStrategy,
+          [fast_period: 5..10, slow_period: 15..25],
+          method: :random_search,
+          samples: 8,
+          maximize: :sharpe_ratio
+        )
+
+      assert result.method == :random_search
+      assert result.metric == :sharpe_ratio
+      assert length(result.all_results) == 8
+    end
+
+    test "returns error for unsupported optimization method" do
+      data = [build_candle(open: 10.0, close: 10.5)]
+
+      {:error, message} =
+        ExPostFacto.optimize(
+          data,
+          ExPostFacto.ExampleStrategies.SmaStrategy,
+          [fast_period: [5], slow_period: [15]],
+          method: :genetic_algorithm
+        )
+
+      assert String.contains?(message, "Unsupported optimization method")
+    end
+
+    test "uses default optimization settings when not specified" do
+      data = generate_trending_test_data(20)
+
+      {:ok, result} =
+        ExPostFacto.optimize(
+          data,
+          ExPostFacto.ExampleStrategies.SmaStrategy,
+          fast_period: [5],
+          slow_period: [15]
+        )
+
+      # Should default to grid search and sharpe_ratio
+      assert result.method == :grid_search
+      assert result.metric == :sharpe_ratio
+    end
+
+    test "performs walk-forward optimization successfully" do
+      data = generate_trending_test_data(150)
+
+      {:ok, result} =
+        ExPostFacto.optimize(
+          data,
+          ExPostFacto.ExampleStrategies.SmaStrategy,
+          [fast_period: [5, 7], slow_period: [15, 20]],
+          method: :walk_forward,
+          training_window: 40,
+          validation_window: 20,
+          step_size: 15
+        )
+
+      assert result.method == :walk_forward
+      assert Map.has_key?(result, :windows)
+      assert Map.has_key?(result, :summary)
+      assert Map.has_key?(result, :parameters_stability)
+    end
+  end
+
+  describe "heatmap/3" do
+    test "generates heatmap from optimization results" do
+      data = generate_trending_test_data(25)
+
+      {:ok, opt_result} =
+        ExPostFacto.optimize(
+          data,
+          ExPostFacto.ExampleStrategies.SmaStrategy,
+          [fast_period: 5..7, slow_period: 15..17],
+          method: :grid_search
+        )
+
+      {:ok, heatmap} = ExPostFacto.heatmap(opt_result, :fast_period, :slow_period)
+
+      assert heatmap.x_param == :fast_period
+      assert heatmap.y_param == :slow_period
+      assert is_list(heatmap.x_values)
+      assert is_list(heatmap.y_values)
+      assert is_list(heatmap.scores)
+    end
+
+    test "returns error for invalid heatmap parameters" do
+      data = generate_trending_test_data(15)
+
+      {:ok, opt_result} =
+        ExPostFacto.optimize(
+          data,
+          ExPostFacto.ExampleStrategies.SmaStrategy,
+          fast_period: [5],
+          slow_period: [15]
+        )
+
+      {:error, message} = ExPostFacto.heatmap(opt_result, :invalid_param, :slow_period)
+      assert String.contains?(message, "not found in optimization results")
+    end
+  end
+
+  # Helper function to generate trending test data
+  defp generate_trending_test_data(count) do
+    Enum.map(1..count, fn i ->
+      base_price = 10.0 + i * 0.1
+      random_offset = (:rand.uniform() - 0.5) * 0.05
+      price = base_price + random_offset
+
+      build_candle(
+        open: price,
+        close: price + 0.05 + random_offset,
+        high: price + 0.1,
+        low: price - 0.05
+      )
+    end)
+  end
 end
