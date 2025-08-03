@@ -7,7 +7,7 @@ ExPostFacto empowers traders and developers to test their trading strategies aga
 ## 🚀 Why ExPostFacto?
 
 - **🎯 Easy to Use**: Simple API that gets you backtesting in minutes
-- **📊 Professional Grade**: Comprehensive statistics and performance metrics  
+- **📊 Professional Grade**: Comprehensive statistics and performance metrics
 - **🔧 Flexible**: Support for simple functions or advanced strategy behaviours
 - **⚡ Fast**: Concurrent optimization and streaming for large datasets
 - **🧹 Robust**: Built-in data validation, cleaning, and error handling
@@ -16,34 +16,60 @@ ExPostFacto empowers traders and developers to test their trading strategies aga
 ## ✨ Key Features
 
 ### Multiple Input Formats
+
 - **CSV files** - Load data directly from CSV files
 - **JSON** - Parse JSON market data
 - **Lists of maps** - Use runtime data structures
 - **Streaming** - Handle large datasets efficiently
 
 ### Data Validation & Cleaning
+
 - **Comprehensive OHLCV validation** with detailed error messages
 - **Automatic data cleaning** - Remove invalid points, sort by timestamp
 - **Enhanced timestamp handling** - Support for multiple date formats
 - **Duplicate detection** and removal
 
 ### Flexible Strategy Framework
+
 - **Simple MFA functions** for quick prototypes
 - **Advanced Strategy behaviour** with state management
 - **Built-in helper functions** - `buy()`, `sell()`, `position()`, etc.
 - **20+ technical indicators** - SMA, EMA, RSI, MACD, Bollinger Bands, and more
 
 ### Performance & Optimization
+
 - **Parameter optimization** with grid search, random search, walk-forward analysis
 - **Concurrent processing** for large parameter spaces
 - **Memory-efficient streaming** for massive datasets
 - **Performance profiling** and bottleneck identification
 
 ### Comprehensive Analytics
+
 - **30+ performance metrics** - Sharpe ratio, CAGR, max drawdown, profit factor
 - **Trade analysis** - Win rate, best/worst trades, trade duration
 - **Risk metrics** - Drawdown analysis, volatility measures
 - **Visual data** - Heatmaps for parameter optimization
+
+=======
+See [ENHANCED_DATA_HANDLING_EXAMPLES.md](docs/ENHANCED_DATA_HANDLING_EXAMPLES.md) for detailed usage examples.
+
+## LiveBook Integration
+
+ExPostFacto works seamlessly with [LiveBook](https://livebook.dev/) for interactive backtesting and analysis:
+
+```elixir
+# In LiveBook, install dependencies:
+Mix.install([
+  {:ex_post_facto, "~> 0.1.0"},
+  {:kino, "~> 0.12.0"},
+  {:kino_vega_lite, "~> 0.1.0"}
+])
+
+# Run interactive backtests with rich visualizations
+{:ok, result} = ExPostFacto.backtest(data, {MyStrategy, :call, []})
+```
+
+See [LiveBook Integration Guide](docs/LIVEBOOK_INTEGRATION.md) for comprehensive examples, interactive forms, and visualization techniques.
 
 ## 📖 Quick Start
 
@@ -248,7 +274,7 @@ ExPostFacto includes several example strategies:
   {ExPostFacto.ExampleStrategies.BollingerBandStrategy, [period: 20, std_dev: 2.0]}
 )
 
-# Breakout Strategy  
+# Breakout Strategy
 {:ok, result} = ExPostFacto.backtest(
   data,
   {ExPostFacto.ExampleStrategies.BreakoutStrategy, [
@@ -261,6 +287,7 @@ ExPostFacto includes several example strategies:
 ## 📚 Documentation & Learning
 
 ### Complete Documentation
+
 - **[Getting Started Guide](docs/GETTING_STARTED.md)** - Step-by-step introduction
 - **[Interactive Tutorial](docs/tutorial.livemd)** - Livebook tutorial with examples
 - **[Strategy API Guide](docs/STRATEGY_API.md)** - Comprehensive strategy development
@@ -269,10 +296,12 @@ ExPostFacto includes several example strategies:
 - **[Migration Guide](docs/MIGRATION_GUIDE.md)** - Moving from other libraries
 
 ### Data Handling
+
 - **[Enhanced Data Handling](docs/ENHANCED_DATA_HANDLING_EXAMPLES.md)** - Data formats and validation
 - **[Error Handling](docs/ENHANCED_ERROR_HANDLING_SUMMARY.md)** - Debugging and validation
 
-### Advanced Features  
+### Advanced Features
+
 - **[Optimization Guide](docs/OPTIMIZATION.md)** - Parameter optimization techniques
 - **[Comprehensive Metrics](docs/COMPREHENSIVE_METRICS.md)** - Performance analysis
 
@@ -317,14 +346,14 @@ IO.inspect(heatmap.scores)  # 2D array of performance scores
 
 ## 🆚 Comparison with Other Libraries
 
-| Feature | ExPostFacto | backtesting.py | Backtrader | QuantConnect |
-|---------|-------------|----------------|------------|--------------|
-| **Language** | Elixir | Python | Python | C#/Python |
-| **Concurrency** | ✅ Native | ❌ | ❌ | ✅ |
-| **Memory Efficiency** | ✅ Streaming | ❌ | ❌ | ✅ |
-| **Data Validation** | ✅ Built-in | ❌ | ❌ | ✅ |
-| **Walk-Forward** | ✅ | ❌ | ✅ | ✅ |
-| **Easy Setup** | ✅ | ✅ | ❌ | ❌ |
+| Feature               | ExPostFacto  | backtesting.py | Backtrader | QuantConnect |
+| --------------------- | ------------ | -------------- | ---------- | ------------ |
+| **Language**          | Elixir       | Python         | Python     | C#/Python    |
+| **Concurrency**       | ✅ Native    | ❌             | ❌         | ✅           |
+| **Memory Efficiency** | ✅ Streaming | ❌             | ❌         | ✅           |
+| **Data Validation**   | ✅ Built-in  | ❌             | ❌         | ✅           |
+| **Walk-Forward**      | ✅           | ❌             | ✅         | ✅           |
+| **Easy Setup**        | ✅           | ✅             | ❌         | ❌           |
 
 ## 🤝 Contributing
 
