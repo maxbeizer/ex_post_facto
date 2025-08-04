@@ -4,8 +4,8 @@ defmodule ExPostFacto.MixProject do
   def project do
     [
       app: :ex_post_facto,
-      version: "0.1.0",
-      elixir: "~> 1.16",
+      version: "0.2.0",
+      elixir: "~> 1.18",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       package: package(),
