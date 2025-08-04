@@ -62,7 +62,7 @@ ExPostFacto works seamlessly with [LiveBook](https://livebook.dev/) for interact
 ```elixir
 # In LiveBook, install dependencies:
 Mix.install([
-  {:ex_post_facto, "~> 0.1.0"},
+  {:ex_post_facto, "~> 0.2.0"},
   {:kino, "~> 0.12.0"},
   {:kino_vega_lite, "~> 0.1.0"}
 ])
@@ -82,7 +82,7 @@ Add ExPostFacto to your `mix.exs`:
 ```elixir
 def deps do
   [
-    {:ex_post_facto, "~> 0.1.0"}
+    {:ex_post_facto, "~> 0.2.0"}
   ]
 end
 ```

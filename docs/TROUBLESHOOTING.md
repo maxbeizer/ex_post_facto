@@ -17,17 +17,21 @@ This guide helps you diagnose and fix common issues when using ExPostFacto.
 ### Problem: Mix dependencies won't resolve
 
 **Error:**
+
 ```
 ** (Mix) Could not resolve dependency :ex_post_facto
 ```
 
 **Solutions:**
+
 1. Check your `mix.exs` dependency specification:
+
    ```elixir
-   {:ex_post_facto, "~> 0.1.0"}
+   {:ex_post_facto, "~> 0.2.0"}
    ```
 
 2. Clear dependency cache:
+
    ```bash
    mix deps.clean --all
    mix deps.get
@@ -41,16 +45,18 @@ This guide helps you diagnose and fix common issues when using ExPostFacto.
 ### Problem: Compilation errors
 
 **Error:**
+
 ```
 ** (CompileError) lib/my_strategy.ex:5: undefined function buy/0
 ```
 
 **Solution:**
 Make sure you're using the Strategy behaviour correctly:
+
 ```elixir
 defmodule MyStrategy do
   use ExPostFacto.Strategy  # This imports buy/0, sell/0, etc.
-  
+
   def init(_opts), do: {:ok, %{}}
   def next(state), do: {:ok, state}
 end
@@ -63,12 +69,15 @@ end
 **Cause:** Your data list is empty or becomes empty after cleaning.
 
 **Solutions:**
+
 1. Check your data source:
+
    ```elixir
    IO.inspect(length(market_data), label: "Data length")
    ```
 
 2. Verify data format:
+
    ```elixir
    IO.inspect(hd(market_data), label: "First data point")
    ```
@@ -82,17 +91,21 @@ end
 ### Problem: CSV file loading fails
 
 **Error:**
+
 ```
 {:error, "failed to load data: failed to read file: enoent"}
 ```
 
 **Solutions:**
+
 1. Check file path:
+
    ```elixir
    File.exists?("path/to/data.csv")
    ```
 
 2. Use absolute paths:
+
    ```elixir
    path = Path.expand("data/market_data.csv")
    {:ok, result} = ExPostFacto.backtest(path, strategy)
@@ -107,21 +120,25 @@ end
 ### Problem: Data validation errors
 
 **Error:**
+
 ```
 {:error, "data point 5: invalid OHLC data: high (95.0) must be >= low (98.0)"}
 ```
 
 **Solutions:**
+
 1. Clean data before validation:
+
    ```elixir
    {:ok, clean_data} = ExPostFacto.clean_data(dirty_data)
    {:ok, result} = ExPostFacto.backtest(clean_data, strategy)
    ```
 
 2. Fix data manually:
+
    ```elixir
    fixed_data = Enum.map(data, fn point ->
-     %{point | 
+     %{point |
        high: max(point.high, max(point.open, point.close)),
        low: min(point.low, min(point.open, point.close))
      }
@@ -140,7 +157,9 @@ end
 **Symptoms:** `trades_count: 0` in results.
 
 **Debugging steps:**
+
 1. Enable debug mode:
+
    ```elixir
    {:ok, result} = ExPostFacto.backtest(
      data, strategy,
@@ -150,16 +169,17 @@ end
    ```
 
 2. Add logging to your strategy:
+
    ```elixir
    def next(state) do
      current_price = data().close
      IO.puts("Current price: #{current_price}")
-     
+
      if current_price > 100 do
        IO.puts("Buy condition met!")
        buy()
      end
-     
+
      {:ok, state}
    end
    ```
@@ -179,12 +199,15 @@ end
 ### Problem: Strategy crashes during execution
 
 **Error:**
+
 ```
 ** (FunctionClauseError) no function clause matching in MyStrategy.next/1
 ```
 
 **Solutions:**
+
 1. Always return proper tuple from `next/1`:
+
    ```elixir
    def next(state) do
      # Your logic here
@@ -193,6 +216,7 @@ end
    ```
 
 2. Handle all possible states:
+
    ```elixir
    def next(state) do
      case calculate_signal(state) do
@@ -200,7 +224,7 @@ end
        {:ok, :sell} -> sell()
        {:error, _reason} -> :ok  # Handle errors gracefully
      end
-     
+
      {:ok, state}
    end
    ```
@@ -210,11 +234,11 @@ end
    def next(state) do
      case Map.get(state, :price_history, []) do
        [] -> :ok  # No history yet
-       prices when length(prices) >= 10 -> 
+       prices when length(prices) >= 10 ->
          # Your logic
        _ -> :ok  # Not enough data
      end
-     
+
      {:ok, state}
    end
    ```
@@ -224,20 +248,22 @@ end
 **Cause:** Insufficient data for indicator calculation.
 
 **Solutions:**
+
 1. Check data length requirements:
+
    ```elixir
    def next(state) do
      price_history = [data().close | state.price_history]
-     
+
      if length(price_history) >= 20 do  # Ensure enough data
        sma = indicator(:sma, price_history, 20)
        current_sma = List.first(sma)
-       
+
        if current_sma do  # Check for nil
          # Use indicator value
        end
      end
-     
+
      {:ok, %{state | price_history: price_history}}
    end
    ```
@@ -258,19 +284,22 @@ end
 ### Problem: Backtests are very slow
 
 **Solutions:**
+
 1. Limit price history:
+
    ```elixir
    def next(state) do
      max_history = 100  # Only keep what you need
-     price_history = 
+     price_history =
        [data().close | state.price_history]
        |> Enum.take(max_history)
-     
+
      {:ok, %{state | price_history: price_history}}
    end
    ```
 
 2. Use streaming for large datasets:
+
    ```elixir
    {:ok, result} = ExPostFacto.backtest_stream(
      "large_file.csv",
@@ -280,13 +309,14 @@ end
    ```
 
 3. Optimize indicator calculations:
+
    ```elixir
    # Bad: Recalculate every time
    def next(state) do
      sma = indicator(:sma, state.price_history, 20)
      # ...
    end
-   
+
    # Good: Cache calculations
    def next(state) do
      state = maybe_update_sma(state)
@@ -297,16 +327,19 @@ end
 ### Problem: Optimization takes too long
 
 **Solutions:**
+
 1. Reduce parameter ranges:
+
    ```elixir
    # Instead of large ranges
    [fast: 5..50, slow: 20..200]
-   
+
    # Use smaller, focused ranges
    [fast: 8..12, slow: 18..22]
    ```
 
 2. Use random search for large spaces:
+
    ```elixir
    {:ok, result} = ExPostFacto.optimize(
      data, strategy,
@@ -330,6 +363,7 @@ end
 ### Problem: Enhanced validation errors
 
 **Error:**
+
 ```
 {:error, %ExPostFacto.Validation.ValidationError{
   message: "Strategy validation failed",
@@ -338,7 +372,9 @@ end
 ```
 
 **Solutions:**
+
 1. Format errors for readability:
+
    ```elixir
    case ExPostFacto.backtest(data, strategy, enhanced_validation: true) do
      {:ok, result} -> result
@@ -362,20 +398,22 @@ end
 ### "Module not found" or "Function not exported"
 
 **Error:**
+
 ```
 ** (UndefinedFunctionError) function MyStrategy.init/1 is undefined
 ```
 
 **Solution:**
 Ensure your strategy module implements the required callbacks:
+
 ```elixir
 defmodule MyStrategy do
   use ExPostFacto.Strategy
-  
+
   def init(opts) do
     {:ok, %{}}
   end
-  
+
   def next(state) do
     {:ok, state}
   end
@@ -387,6 +425,7 @@ end
 **Cause:** Incorrect strategy specification.
 
 **Solutions:**
+
 ```elixir
 # Correct formats:
 {MyStrategy, :call, []}           # MFA tuple
@@ -400,16 +439,18 @@ MyStrategy                        # Just module name
 ### "Position function not available"
 
 **Error:**
+
 ```
 ** (UndefinedFunctionError) function :position not found
 ```
 
 **Solution:**
 Use `position()` inside Strategy behaviour context:
+
 ```elixir
 defmodule MyStrategy do
   use ExPostFacto.Strategy
-  
+
   def next(state) do
     current_pos = position()  # This works here
     # ...
@@ -446,7 +487,7 @@ def next(state) do
   IO.inspect(data(), label: "Current data")
   IO.inspect(position(), label: "Current position")
   IO.inspect(equity(), label: "Current equity")
-  
+
   # Your strategy logic
   {:ok, state}
 end
@@ -473,7 +514,7 @@ defmodule StrategyTester do
   def test_logic do
     state = %{threshold: 100}
     data = %{close: 105}
-    
+
     # Mock the data() function
     result = if data.close > state.threshold, do: :buy, else: :sell
     IO.puts("Signal: #{result}")

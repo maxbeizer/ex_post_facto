@@ -19,7 +19,7 @@ Add ExPostFacto to your `mix.exs` dependencies:
 ```elixir
 def deps do
   [
-    {:ex_post_facto, "~> 0.1.0"}
+    {:ex_post_facto, "~> 0.2.0"}
   ]
 end
 ```
@@ -72,14 +72,16 @@ ExPostFacto can automatically load data from CSV files:
 ### CSV Format
 
 Your CSV should have these columns (case-insensitive):
+
 - `Date` or `Timestamp` - The date/time
 - `Open` - Opening price
 - `High` - Highest price
-- `Low` - Lowest price  
+- `Low` - Lowest price
 - `Close` - Closing price
 - `Volume` (optional) - Trading volume
 
 Example:
+
 ```csv
 Date,Open,High,Low,Close,Volume
 2023-01-01,100.0,105.0,98.0,102.0,1000000
@@ -125,18 +127,18 @@ defmodule MyAdvancedStrategy do
 
   def next(state) do
     current_price = data().close
-    
+
     if current_price > state.threshold do
       buy()
     else
       sell()
     end
-    
+
     {:ok, state}
   end
 end
 
-# Use it in a backtest  
+# Use it in a backtest
 {:ok, result} = ExPostFacto.backtest(
   market_data,
   {MyAdvancedStrategy, [threshold: 105.0]},
@@ -201,9 +203,9 @@ ExPostFacto provides detailed error messages to help you debug issues:
 ```elixir
 # Enhanced error handling
 case ExPostFacto.backtest(data, strategy, enhanced_validation: true) do
-  {:ok, output} -> 
+  {:ok, output} ->
     output
-  {:error, error} -> 
+  {:error, error} ->
     IO.puts("Backtest failed: #{error}")
     :error
 end
@@ -214,7 +216,7 @@ end
 Now that you have the basics, explore these advanced features:
 
 1. **[Strategy Development](STRATEGY_API.md)** - Learn about the advanced Strategy behaviour
-2. **[Technical Indicators](INDICATORS.md)** - Use built-in indicators in your strategies  
+2. **[Technical Indicators](INDICATORS.md)** - Use built-in indicators in your strategies
 3. **[Strategy Optimization](OPTIMIZATION.md)** - Find optimal parameters for your strategies
 4. **[Best Practices](BEST_PRACTICES.md)** - Guidelines for effective strategy development
 5. **[Migration Guide](MIGRATION_GUIDE.md)** - Moving from other backtesting libraries
@@ -222,18 +224,21 @@ Now that you have the basics, explore these advanced features:
 ## Common Issues
 
 ### "Module not found" errors
+
 Make sure your strategy module is compiled and available. Use `iex -S mix` to test interactively.
 
 ### Data validation errors
+
 Check that your OHLC data has valid relationships (high >= low, open/close between high/low).
 
 ### Empty results
+
 Ensure your strategy is actually generating trading signals. Use debug mode to trace execution:
 
 ```elixir
 {:ok, result} = ExPostFacto.backtest(
-  data, 
-  strategy, 
+  data,
+  strategy,
   enhanced_validation: true,
   debug: true
 )
