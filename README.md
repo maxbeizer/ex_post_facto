@@ -53,8 +53,6 @@ ExPostFacto empowers traders and developers to test their trading strategies aga
 - **Risk metrics** - Drawdown analysis, volatility measures
 - **Visual data** - Heatmaps for parameter optimization
 
-=======
-
 See [ENHANCED_DATA_HANDLING_EXAMPLES.md](docs/ENHANCED_DATA_HANDLING_EXAMPLES.md) for detailed usage examples.
 
 ## LiveBook Integration
