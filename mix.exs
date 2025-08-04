@@ -30,6 +30,7 @@ defmodule ExPostFacto.MixProject do
       main: "ExPostFacto",
       extras: [
         "README.md",
+        "LICENSE",
         "CHANGELOG.md",
         "CONTRIBUTING.md",
         "docs/GETTING_STARTED.md",
@@ -44,12 +45,14 @@ defmodule ExPostFacto.MixProject do
         "docs/ENHANCED_ERROR_HANDLING_SUMMARY.md",
         "docs/LIVEBOOK_INTEGRATION.md",
         "docs/MIGRATION_GUIDE.md",
-        "docs/TROUBLESHOOTING.md"
+        "docs/TROUBLESHOOTING.md",
+        "docs/tutorial.livemd"
       ],
       groups_for_extras: [
         "Getting Started": [
           "docs/GETTING_STARTED.md",
-          "docs/API_REFERENCE.md"
+          "docs/API_REFERENCE.md",
+          "docs/tutorial.livemd"
         ],
         "Strategy Development": [
           "docs/STRATEGY_API.md",
@@ -73,6 +76,7 @@ defmodule ExPostFacto.MixProject do
           "docs/TROUBLESHOOTING.md"
         ],
         "Project Info": [
+          "LICENSE",
           "CHANGELOG.md",
           "CONTRIBUTING.md"
         ]
