@@ -2,6 +2,9 @@
 
 **A comprehensive backtesting library for trading strategies written in Elixir.**
 
+> [!IMPORTANT]
+> This library is under active, pre 1.0 development. The APIs are not to be considered stable. Calculations may not be correct. See the [LICENSE](LICENSE) but use at your own risk.
+
 ExPostFacto empowers traders and developers to test their trading strategies against historical data with confidence. Built with Elixir's concurrency and fault-tolerance in mind, it provides enterprise-grade backtesting capabilities with an intuitive API.
 
 ## 🚀 Why ExPostFacto?
