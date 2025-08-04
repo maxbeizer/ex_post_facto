@@ -7,6 +7,12 @@ defmodule ExPostFacto.DataPoint do
   @enforce_keys [:datum, :action, :index]
   defstruct [:datum, :action, :index]
 
+  @type t :: %__MODULE__{
+          datum: InputData.t(),
+          action: atom(),
+          index: integer()
+        }
+
   @doc """
   Creates a new data point struct.
   """

@@ -12,6 +12,16 @@ defmodule ExPostFacto.InputData do
             timestamp: nil,
             other: nil
 
+  @type t :: %__MODULE__{
+          high: float(),
+          low: float(),
+          open: float(),
+          close: float(),
+          volume: float(),
+          timestamp: DateTime.t() | nil,
+          other: any()
+        }
+
   defmodule InvalidInputDataError do
     defexception message: "Invalid InputData"
   end

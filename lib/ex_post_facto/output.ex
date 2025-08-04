@@ -10,6 +10,12 @@ defmodule ExPostFacto.Output do
 
   defstruct data: [], strategy: nil, result: nil
 
+  @type t :: %__MODULE__{
+          data: [DataPoint.t()],
+          strategy: ExPostFacto.module_function_arguments(),
+          result: Result.t()
+        }
+
   @doc """
   Creates a new output struct.
   """

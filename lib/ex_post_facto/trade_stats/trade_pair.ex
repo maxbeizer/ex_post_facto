@@ -14,6 +14,13 @@ defmodule ExPostFacto.TradeStats.TradePair do
   @enforce_keys [:exit_point, :enter_point, :balance, :previous_balance]
   defstruct [:exit_point, :enter_point, :balance, :previous_balance]
 
+  @type t :: %__MODULE__{
+          exit_point: DataPoint.t(),
+          enter_point: DataPoint.t(),
+          balance: float(),
+          previous_balance: float()
+        }
+
   @doc """
   Builds a new trade pair struct.
   """

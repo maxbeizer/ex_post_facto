@@ -30,6 +30,12 @@ defmodule ExPostFacto.Validation do
     @moduledoc "Raised when data validation fails"
     defexception [:message, :context, :suggestions]
 
+    @type t :: %__MODULE__{
+            message: String.t(),
+            context: map(),
+            suggestions: [String.t()]
+          }
+
     @impl true
     def exception(opts) when is_list(opts) do
       message = Keyword.get(opts, :message, "Validation failed")
@@ -51,6 +57,13 @@ defmodule ExPostFacto.Validation do
   defmodule StrategyError do
     @moduledoc "Raised when strategy validation or execution fails"
     defexception [:message, :strategy, :suggestions, :debug_info]
+
+    @type t :: %__MODULE__{
+            message: String.t(),
+            strategy: any(),
+            suggestions: [String.t()],
+            debug_info: map()
+          }
 
     @impl true
     def exception(opts) when is_list(opts) do
