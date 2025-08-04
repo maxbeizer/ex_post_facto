@@ -176,16 +176,17 @@ defmodule ExPostFacto.ExampleStrategies.MultiIndicatorStrategy do
       indicators = calculate_indicators(price_history, state)
 
       # Check for bullish signal
-      if bullish_signal?(current_price, indicators, state) do
-        buy()
-        %{state | entry_price: current_price, entry_type: :long}
-
-        # Check for bearish signal
-      elsif bearish_signal?(current_price, indicators, state) do
-        sell()
-        %{state | entry_price: current_price, entry_type: :short}
-      else
-        state
+      cond do
+        bullish_signal?(current_price, indicators, state) ->
+          buy()
+          %{state | entry_price: current_price, entry_type: :long}
+        
+        bearish_signal?(current_price, indicators, state) ->
+          sell()
+          %{state | entry_price: current_price, entry_type: :short}
+        
+        true ->
+          state
       end
     else
       state

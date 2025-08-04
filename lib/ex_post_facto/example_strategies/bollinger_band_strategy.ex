@@ -69,7 +69,7 @@ defmodule ExPostFacto.ExampleStrategies.BollingerBandStrategy do
 
   # Private helper functions
 
-  defp make_trading_decision(current_price, upper_band, middle_band, lower_band, state) do
+  defp make_trading_decision(current_price, upper_band, middle_band, lower_band, _state) do
     current_position = position()
 
     cond do
