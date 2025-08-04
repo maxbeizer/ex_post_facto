@@ -144,7 +144,8 @@ defmodule ExPostFacto.ExampleStrategies.PortfolioRebalancingStrategy do
         |> Enum.sum()
         |> Kernel./(length(returns) - 1)
 
-      :math.sqrt(variance) * :math.sqrt(252)  # Annualized volatility
+      # Annualized volatility
+      :math.sqrt(variance) * :math.sqrt(252)
     end
   end
 
@@ -164,7 +165,7 @@ defmodule ExPostFacto.ExampleStrategies.PortfolioRebalancingStrategy do
       current_momentum = List.first(state.momentum_history)
 
       # Volatility-based adjustment
-      volatility_adjustment = 
+      volatility_adjustment =
         if current_volatility > 0 do
           state.target_volatility / current_volatility
         else
@@ -172,18 +173,22 @@ defmodule ExPostFacto.ExampleStrategies.PortfolioRebalancingStrategy do
         end
 
       # Momentum-based adjustment
-      momentum_adjustment = case current_momentum do
-        m when m > 0.02 -> 1.2    # Strong positive momentum - increase allocation
-        m when m < -0.02 -> 0.8   # Strong negative momentum - decrease allocation
-        _ -> 1.0                  # Neutral momentum
-      end
+      momentum_adjustment =
+        case current_momentum do
+          # Strong positive momentum - increase allocation
+          m when m > 0.02 -> 1.2
+          # Strong negative momentum - decrease allocation
+          m when m < -0.02 -> 0.8
+          # Neutral momentum
+          _ -> 1.0
+        end
 
       # Calculate target allocation
       base_allocation = 0.5
       adjusted_allocation = base_allocation * volatility_adjustment * momentum_adjustment
 
       # Clamp to reasonable bounds
-      target = 
+      target =
         adjusted_allocation
         |> max(state.min_position_size)
         |> min(state.max_position_size)
@@ -199,18 +204,20 @@ defmodule ExPostFacto.ExampleStrategies.PortfolioRebalancingStrategy do
     current_position = position()
 
     # Check if rebalancing is needed
-    should_rebalance = 
+    # Force rebalance after 21 days
+    should_rebalance =
       allocation_difference > state.rebalance_threshold or
-      state.days_since_rebalance > 21  # Force rebalance after 21 days
+        state.days_since_rebalance > 21
 
     if should_rebalance do
       # Determine new position based on target allocation
-      new_position_type = cond do
-        state.target_allocation > 0.7 -> :strong_long
-        state.target_allocation > 0.3 -> :long
-        state.target_allocation < 0.3 -> :short
-        true -> :neutral
-      end
+      new_position_type =
+        cond do
+          state.target_allocation > 0.7 -> :strong_long
+          state.target_allocation > 0.3 -> :long
+          state.target_allocation < 0.3 -> :short
+          true -> :neutral
+        end
 
       # Execute position changes
       execute_position_change(current_position, new_position_type, state)
@@ -250,6 +257,7 @@ defmodule ExPostFacto.ExampleStrategies.PortfolioRebalancingStrategy do
           :short -> close_sell()
           _ -> :ok
         end
+
         update_rebalance_state(state, 0.0)
     end
   end

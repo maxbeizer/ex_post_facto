@@ -1,0 +1,366 @@
+# ExPostFacto LiveBook Quick Start
+
+```elixir
+Mix.install([
+  {:ex_post_facto, "~> 0.1.0"},
+  {:kino, "~> 0.12.0"},
+  {:kino_vega_lite, "~> 0.1.0"}
+])
+
+alias VegaLite, as: Vl
+```
+
+## Introduction
+
+Welcome to ExPostFacto! This notebook demonstrates basic backtesting functionality using interactive LiveBook features.
+
+## Sample Data Generation
+
+```elixir
+defmodule SampleData do
+  @moduledoc """
+  Helper module to generate realistic market data for backtesting examples.
+  """
+  
+  def generate_ohlc(days \\ 100, base_price \\ 100.0) do
+    :rand.seed(:exsss, {1, 2, 3})  # Consistent random seed for reproducible results
+    
+    Enum.reduce(1..days, [], fn day, acc ->
+      prev_close = if acc == [], do: base_price, else: hd(acc).close
+      
+      # Generate realistic OHLC data with some volatility
+      open = prev_close + (:rand.uniform() - 0.5) * 2
+      close = open + (:rand.uniform() - 0.5) * 3
+      high = max(open, close) + :rand.uniform() * 2
+      low = min(open, close) - :rand.uniform() * 2
+      
+      point = %{
+        open: Float.round(open, 2),
+        high: Float.round(high, 2), 
+        low: Float.round(low, 2),
+        close: Float.round(close, 2),
+        volume: :rand.uniform(1000000) + 500000,
+        timestamp: Date.add(~D[2023-01-01], day - 1) |> Date.to_string()
+      }
+      
+      [point | acc]
+    end) |> Enum.reverse()
+  end
+end
+
+# Generate sample market data
+market_data = SampleData.generate_ohlc(100)
+
+IO.puts("Generated #{length(market_data)} data points")
+IO.inspect(Enum.take(market_data, 3), label: "Sample data")
+```
+
+## Simple Buy-and-Hold Strategy
+
+Let's start with the simplest strategy - buy and hold:
+
+```elixir
+defmodule BuyAndHoldStrategy do
+  @moduledoc """
+  A simple buy-and-hold strategy that buys on the first day and holds.
+  """
+  
+  def call(_market_data, %{data_points: data_points, is_position_open: is_position_open}) do
+    case {length(data_points), is_position_open} do
+      {0, false} -> :buy    # Buy on first day
+      _ -> :noop            # Hold everything else
+    end
+  end
+end
+
+# Run the backtest
+{:ok, buy_hold_result} = ExPostFacto.backtest(
+  market_data,
+  {BuyAndHoldStrategy, :call, []},
+  starting_balance: 100_000.0
+)
+
+# Display results
+IO.puts("=== Buy and Hold Results ===")
+IO.puts("Starting Balance: $#{buy_hold_result.result.starting_balance}")
+IO.puts("Final Balance: $#{buy_hold_result.result.final_balance}")
+IO.puts("Total P&L: $#{buy_hold_result.result.total_profit_and_loss}")
+IO.puts("Total Return: #{Float.round((buy_hold_result.result.final_balance / buy_hold_result.result.starting_balance - 1) * 100, 2)}%")
+```
+
+## Moving Average Crossover Strategy
+
+Now let's try a more sophisticated strategy using moving average crossovers:
+
+```elixir
+defmodule MovingAverageStrategy do
+  @moduledoc """
+  Simple Moving Average Crossover Strategy
+  
+  Buys when short MA crosses above long MA (golden cross)
+  Sells when short MA crosses below long MA (death cross)
+  """
+  
+  def call(%{close: price}, %{data_points: data_points, is_position_open: is_position_open}) do
+    # Get recent prices for moving averages
+    recent_prices = [price | Enum.map(data_points, & &1.datum.close)]
+    
+    case length(recent_prices) do
+      len when len < 20 -> 
+        :noop  # Not enough data for 20-day MA
+      _ ->
+        # Calculate 10-day and 20-day simple moving averages
+        sma_10 = recent_prices |> Enum.take(10) |> Enum.sum() |> Kernel./(10)
+        sma_20 = recent_prices |> Enum.take(20) |> Enum.sum() |> Kernel./(20)
+        
+        cond do
+          !is_position_open && sma_10 > sma_20 -> :buy       # Golden cross
+          is_position_open && sma_10 < sma_20 -> :close_buy  # Death cross
+          true -> :noop
+        end
+    end
+  end
+end
+
+# Run the moving average strategy
+{:ok, ma_result} = ExPostFacto.backtest(
+  market_data,
+  {MovingAverageStrategy, :call, []},
+  starting_balance: 100_000.0
+)
+
+# Display results
+IO.puts("\n=== Moving Average Strategy Results ===")
+IO.puts("Starting Balance: $#{ma_result.result.starting_balance}")
+IO.puts("Final Balance: $#{ma_result.result.final_balance}")
+IO.puts("Total P&L: $#{ma_result.result.total_profit_and_loss}")
+IO.puts("Total Return: #{Float.round((ma_result.result.final_balance / ma_result.result.starting_balance - 1) * 100, 2)}%")
+IO.puts("Number of Trades: #{length(ma_result.result.trade_pairs)}")
+```
+
+## Strategy Comparison
+
+Let's compare our strategies side by side:
+
+```elixir
+# Get comprehensive statistics for both strategies
+buy_hold_stats = ExPostFacto.Result.comprehensive_summary(buy_hold_result.result)
+ma_stats = ExPostFacto.Result.comprehensive_summary(ma_result.result)
+
+comparison_data = [
+  %{
+    "Strategy" => "Buy & Hold",
+    "Total Return %" => Float.round(buy_hold_stats.total_return_pct, 2),
+    "Sharpe Ratio" => Float.round(buy_hold_stats.sharpe_ratio, 3),
+    "Max Drawdown %" => Float.round(buy_hold_stats.max_drawdown_pct, 2),
+    "Win Rate %" => Float.round(buy_hold_stats.win_rate_pct, 2),
+    "Trades" => buy_hold_stats.trades_count
+  },
+  %{
+    "Strategy" => "Moving Average",
+    "Total Return %" => Float.round(ma_stats.total_return_pct, 2),
+    "Sharpe Ratio" => Float.round(ma_stats.sharpe_ratio, 3),
+    "Max Drawdown %" => Float.round(ma_stats.max_drawdown_pct, 2),
+    "Win Rate %" => Float.round(ma_stats.win_rate_pct, 2),
+    "Trades" => ma_stats.trades_count
+  }
+]
+
+Kino.DataTable.new(comparison_data)
+```
+
+## Interactive Price Chart
+
+Create an interactive chart showing price action and trade signals:
+
+```elixir
+defmodule ChartBuilder do
+  def prepare_price_data(market_data) do
+    Enum.with_index(market_data, fn data, index ->
+      %{
+        "index" => index,
+        "date" => data.timestamp,
+        "price" => data.close
+      }
+    end)
+  end
+  
+  def prepare_trade_signals(trade_pairs, market_data) do
+    # Create a map for quick date lookup
+    date_to_index = 
+      market_data
+      |> Enum.with_index()
+      |> Enum.into(%{}, fn {data, index} -> {data.timestamp, index} end)
+    
+    Enum.flat_map(trade_pairs, fn pair ->
+      signals = []
+      
+      # Add buy signal
+      if entry_index = date_to_index[pair.entry_timestamp] do
+        signals = [%{
+          "index" => entry_index,
+          "price" => pair.entry_price,
+          "type" => "BUY"
+        } | signals]
+      end
+      
+      # Add sell signal
+      if pair.exit_timestamp && (exit_index = date_to_index[pair.exit_timestamp]) do
+        signals = [%{
+          "index" => exit_index,
+          "price" => pair.exit_price,
+          "type" => "SELL"
+        } | signals]
+      end
+      
+      signals
+    end)
+  end
+end
+
+# Prepare chart data
+price_data = ChartBuilder.prepare_price_data(market_data)
+trade_signals = ChartBuilder.prepare_trade_signals(ma_result.result.trade_pairs, market_data)
+
+# Create price line chart
+price_chart = 
+  Vl.new(width: 800, height: 400)
+  |> Vl.data_from_values(price_data)
+  |> Vl.mark(:line, color: "steelblue", stroke_width: 2)
+  |> Vl.encode_field(:x, "index", type: :quantitative, title: "Time")
+  |> Vl.encode_field(:y, "price", type: :quantitative, title: "Price ($)")
+
+# Create trade signals overlay
+signals_chart = 
+  Vl.new()
+  |> Vl.data_from_values(trade_signals)
+  |> Vl.mark(:circle, size: 100)
+  |> Vl.encode_field(:x, "index", type: :quantitative)
+  |> Vl.encode_field(:y, "price", type: :quantitative)
+  |> Vl.encode_field(:color, "type", 
+      type: :nominal, 
+      scale: [domain: ["BUY", "SELL"], range: ["green", "red"]])
+  |> Vl.encode_field(:tooltip, ["type", "price"])
+
+# Layer the charts
+chart = Vl.layer([price_chart, signals_chart])
+|> Vl.resolve(:scale, color: :independent)
+
+Kino.VegaLite.new(chart)
+```
+
+## Equity Curve Visualization
+
+Let's see how our portfolio value changed over time:
+
+```elixir
+# Prepare equity curve data
+equity_data = 
+  ma_result.result.data_points
+  |> Enum.with_index()
+  |> Enum.map(fn {point, index} ->
+    %{
+      "index" => index,
+      "equity" => point.running_balance,
+      "date" => Enum.at(market_data, index).timestamp
+    }
+  end)
+
+# Create equity curve chart
+equity_chart = 
+  Vl.new(width: 800, height: 300, title: "Portfolio Equity Curve")
+  |> Vl.data_from_values(equity_data)
+  |> Vl.mark(:line, color: "green", stroke_width: 3)
+  |> Vl.encode_field(:x, "index", type: :quantitative, title: "Time")
+  |> Vl.encode_field(:y, "equity", type: :quantitative, title: "Portfolio Value ($)")
+
+Kino.VegaLite.new(equity_chart)
+```
+
+## Interactive Parameter Testing
+
+Try different moving average periods:
+
+```elixir
+# Create an interactive form for testing different MA periods
+form = 
+  Kino.Control.form([
+    short_ma: Kino.Control.number("Short MA Period", default: 10, min: 1, max: 50),
+    long_ma: Kino.Control.number("Long MA Period", default: 20, min: 1, max: 100),
+    balance: Kino.Control.number("Starting Balance", default: 100_000, min: 1000)
+  ], submit: "Run Backtest")
+
+form
+```
+
+```elixir
+# Listen for form submissions and run backtests
+output_frame = Kino.Frame.new()
+
+Kino.Control.stream(form)
+|> Kino.listen(fn %{data: %{short_ma: short, long_ma: long, balance: balance}} ->
+  result_content = if short >= long do
+    "⚠️ **Error**: Short MA period must be less than Long MA period"
+  else
+    # Create a custom strategy with the specified parameters
+    custom_strategy = fn %{close: price}, %{data_points: data_points, is_position_open: is_position_open} ->
+      recent_prices = [price | Enum.map(data_points, & &1.datum.close)]
+      
+      case length(recent_prices) do
+        len when len < long -> :noop
+        _ ->
+          sma_short = recent_prices |> Enum.take(short) |> Enum.sum() |> Kernel./(short)
+          sma_long = recent_prices |> Enum.take(long) |> Enum.sum() |> Kernel./(long)
+          
+          cond do
+            !is_position_open && sma_short > sma_long -> :buy
+            is_position_open && sma_short < sma_long -> :close_buy
+            true -> :noop
+          end
+      end
+    end
+    
+    {:ok, result} = ExPostFacto.backtest(
+      market_data,
+      {__MODULE__, :custom_strategy_wrapper, [custom_strategy]},
+      starting_balance: balance
+    )
+    
+    stats = ExPostFacto.Result.comprehensive_summary(result.result)
+    
+    """
+    ## ✅ Backtest Results
+    
+    **Parameters**: #{short}/#{long} MA, $#{balance} starting balance
+    
+    - **Final Balance**: $#{Float.round(result.result.final_balance, 2)}
+    - **Total Return**: #{Float.round(stats.total_return_pct, 2)}%
+    - **Sharpe Ratio**: #{Float.round(stats.sharpe_ratio, 3)}
+    - **Win Rate**: #{Float.round(stats.win_rate_pct, 2)}%
+    - **Max Drawdown**: #{Float.round(stats.max_drawdown_pct, 2)}%
+    - **Total Trades**: #{stats.trades_count}
+    """
+  end
+  
+  Kino.Frame.render(output_frame, Kino.Markdown.new(result_content))
+end)
+
+# Helper function for the custom strategy
+def custom_strategy_wrapper(data, context, strategy_fn) do
+  strategy_fn.(data, context)
+end
+
+output_frame
+```
+
+## Next Steps
+
+This notebook covered the basics of using ExPostFacto with LiveBook. To learn more:
+
+1. **Read the Documentation**: Check out the [LiveBook Integration Guide](../docs/LIVEBOOK_INTEGRATION.md)
+2. **Try More Strategies**: Explore the strategy examples in the documentation
+3. **Load Real Data**: Upload your own CSV files with market data
+4. **Advanced Visualization**: Create more sophisticated charts and dashboards
+5. **Parameter Optimization**: Run systematic parameter sweeps
+
+Happy backtesting! 🚀📈
