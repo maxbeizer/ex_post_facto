@@ -66,7 +66,7 @@ alias VegaLite, as: Vl
 ```
 
 ```elixir
-# Cell 2: Sample Data Generation
+# Cell 2: Sample Data Generation with EXTREME Volatility
 defmodule SampleData do
   def generate_ohlc(days \\ 100, base_price \\ 100.0) do
     # Seed the random number generator for reproducible results
@@ -75,40 +75,43 @@ defmodule SampleData do
     Enum.reduce(1..days, [], fn day, acc ->
       prev_close = if acc == [], do: base_price, else: hd(acc).close
 
-      # Create multiple overlapping cycles to generate interesting crossovers
-      # Short cycle for immediate reversals (good for fast MA)
-      short_cycle = :math.sin(day * 2 * :math.pi() / 12) * 12
+      # Create MUCH more aggressive cycles for guaranteed crossovers
+      # Ultra-short cycle for rapid reversals every few days
+      short_cycle = :math.sin(day * 2 * :math.pi() / 3) * 6  # Every 3 days, ±6 points
 
-      # Medium cycle for trend changes (good for slow MA crossovers)
-      medium_cycle = :math.sin(day * 2 * :math.pi() / 25) * 20
+      # Medium cycle for trend changes
+      medium_cycle = :math.sin(day * 2 * :math.pi() / 7) * 8  # Every 7 days, ±8 points
 
       # Long cycle for overall market direction
-      long_cycle = :math.sin(day * 2 * :math.pi() / 60) * 30
+      long_cycle = :math.sin(day * 2 * :math.pi() / 15) * 12  # Every 15 days, ±12 points
 
-      # Add volatility spikes at certain intervals
-      volatility_spike = if rem(day, 20) in [0, 1, 2], do: (:rand.uniform() - 0.5) * 30, else: 0
+      # Add FREQUENT volatility spikes
+      volatility_spike = if rem(day, 4) in [0, 1], do: (:rand.uniform() - 0.5) * 10, else: 0
 
-      # Combine all components with higher weightings for more movement
-      price_movement = short_cycle * 0.6 + medium_cycle * 0.7 + long_cycle * 0.4 + volatility_spike
+      # Add random "market events" every few days
+      market_event = if rem(day, 8) == 0, do: (:rand.uniform() - 0.5) * 15, else: 0
 
-      # Add controlled noise
-      noise = (:rand.uniform() - 0.5) * 3
+      # Add daily noise to ensure constant movement
+      daily_noise = (:rand.uniform() - 0.5) * 4
+
+      # Combine ALL components for maximum movement
+      price_movement = short_cycle * 1.5 + medium_cycle * 1.3 + long_cycle * 1.0 + volatility_spike + market_event + daily_noise
 
       # Calculate OHLC based on the movement
       direction = if price_movement > 0, do: 1, else: -1
-      magnitude = abs(price_movement) + abs(noise)
+      magnitude = abs(price_movement)
 
-      open = prev_close + noise
-      close = open + price_movement + (noise * 0.5)
+      open = prev_close
+      close = open + price_movement
 
-      # Create realistic high/low based on direction and magnitude
+      # Create realistic high/low with extra spread
       {high, low} = if direction > 0 do
-        high = max(open, close) + magnitude * 0.3 + :rand.uniform() * 2
-        low = min(open, close) - :rand.uniform() * 1.5
+        high = max(open, close) + magnitude * 0.2 + :rand.uniform() * 1
+        low = min(open, close) - :rand.uniform() * 0.5
         {high, low}
       else
-        high = max(open, close) + :rand.uniform() * 1.5
-        low = min(open, close) - magnitude * 0.3 - :rand.uniform() * 2
+        high = max(open, close) + :rand.uniform() * 0.5
+        low = min(open, close) - magnitude * 0.2 - :rand.uniform() * 1
         {high, low}
       end
 
@@ -126,7 +129,7 @@ defmodule SampleData do
   end
 end
 
-# Generate 100 days of sample market data with multiple crossover opportunities
+# Generate 100 days of sample market data with EXTREME volatility for guaranteed trades
 market_data = SampleData.generate_ohlc(100)
 
 IO.puts("Generated #{length(market_data)} data points")
@@ -143,18 +146,22 @@ IO.puts("Price range: $#{Float.round(min_price, 2)} - $#{Float.round(max_price, 
 IO.puts("Price range span: $#{Float.round(price_range, 2)} (#{Float.round(price_range / avg_price * 100, 1)}%)")
 IO.puts("Average price: $#{Float.round(avg_price, 2)}")
 
-# Quick check for volatility - count significant price changes
+# Count extreme price moves for strategy triggers
 significant_moves = Enum.zip(prices, tl(prices))
 |> Enum.count(fn {prev, curr} -> abs(curr - prev) / prev > 0.02 end)  # 2% moves
 
-IO.puts("Days with >2% price moves: #{significant_moves} out of #{length(prices) - 1}")
+large_moves = Enum.zip(prices, tl(prices))
+|> Enum.count(fn {prev, curr} -> abs(curr - prev) / prev > 0.05 end)  # 5% moves
 
-# Show some sample price movements to verify we have good volatility
-IO.puts("\n📈 Sample Price Movements (first 20 days):")
-first_20_prices = Enum.take(prices, 20)
-for {price, index} <- Enum.with_index(first_20_prices) do
+IO.puts("Days with >2% price moves: #{significant_moves} out of #{length(prices) - 1}")
+IO.puts("Days with >5% price moves: #{large_moves} out of #{length(prices) - 1}")
+
+# Show some sample price movements to verify we have EXTREME volatility
+IO.puts("\n📈 Sample Price Movements (first 25 days):")
+first_25_prices = Enum.take(prices, 25)
+for {price, index} <- Enum.with_index(first_25_prices) do
   change = if index > 0 do
-    prev_price = Enum.at(first_20_prices, index - 1)
+    prev_price = Enum.at(first_25_prices, index - 1)
     change_pct = (price - prev_price) / prev_price * 100
     " (#{if change_pct > 0, do: "+", else: ""}#{Float.round(change_pct, 1)}%)"
   else
@@ -163,22 +170,57 @@ for {price, index} <- Enum.with_index(first_20_prices) do
   IO.puts("Day #{index + 1}: $#{price}#{change}")
 end
 
-IO.puts("This should generate multiple moving average crossovers! 📈📉")
+# Show key threshold levels for our ULTRA-SENSITIVE strategies
+IO.puts("\n🎯 Strategy Threshold Analysis:")
+IO.puts("   Simple Trend Buy Threshold:  $101.00 (1% above $100)")
+IO.puts("   Simple Trend Sell Threshold: $99.00 (1% below $100)")
+IO.puts("   Price crosses above $101: #{Enum.count(prices, &(&1 > 101.0))} times")
+IO.puts("   Price crosses below $99: #{Enum.count(prices, &(&1 < 99.0))} times")
+IO.puts("   Oscillator triggers (±$0.25 moves): #{Enum.zip(prices, tl(prices)) |> Enum.count(fn {prev, curr} -> abs(curr - prev) > 0.25 end)} times")
+
+# Additional analysis for debugging strategy triggers
+oscillator_triggers = Enum.zip(prices, tl(prices)) |> Enum.count(fn {prev, curr} -> abs(curr - prev) > 0.25 end)
+big_oscillator_triggers = Enum.zip(prices, tl(prices)) |> Enum.count(fn {prev, curr} -> abs(curr - prev) > 1.0 end)
+
+IO.puts("\n🔍 STRATEGY TRIGGER ANALYSIS:")
+IO.puts("   Expected Oscillator trades (±$0.25): #{oscillator_triggers}")
+IO.puts("   Expected big moves (±$1.00): #{big_oscillator_triggers}")
+IO.puts("   Price variance: #{Float.round(Enum.reduce(prices, 0, fn p, acc -> acc + :math.pow(p - avg_price, 2) end) / length(prices), 2)}")
+
+# Show first 10 day-to-day changes
+IO.puts("\n📈 Day-to-Day Price Changes (first 10 days):")
+Enum.zip(Enum.take(prices, 10), tl(Enum.take(prices, 11)))
+|> Enum.with_index()
+|> Enum.each(fn {{prev, curr}, i} ->
+  change = curr - prev
+  IO.puts("   Day #{i + 1} → #{i + 2}: $#{Float.round(prev, 2)} → $#{Float.round(curr, 2)} (#{if change > 0, do: "+", else: ""}#{Float.round(change, 2)})")
+end)
+
+# Calculate some simple moving averages to see if we'll get crossovers
+if length(prices) >= 3 do
+  last_3_prices = Enum.take(prices, 3)
+  ma_2 = Enum.sum(Enum.take(last_3_prices, 2)) / 2
+  ma_3 = Enum.sum(last_3_prices) / 3
+
+  IO.puts("\n📊 Moving Average Preview (latest data):")
+  IO.puts("   2-day MA:  $#{Float.round(ma_2, 2)}")
+  IO.puts("   3-day MA:  $#{Float.round(ma_3, 2)}")
+  IO.puts("   Current Price: $#{Float.round(hd(prices), 2)}")
+  IO.puts("   MA Difference: $#{Float.round(ma_2 - ma_3, 2)}")
+end
+
+IO.puts("\nThis should generate multiple moving average crossovers! 📈📉")
 ```
 
 ```elixir
 # Cell 3: Moving Average Strategies
 defmodule SMAStrategy do
   @doc "Simple test strategy - buy then sell"
-  def test_call(%ExPostFacto.InputData{} = data, %ExPostFacto.Result{is_position_open: is_position_open} = result) do
-    IO.inspect({data, result}, label: "Test strategy called with")
-
+  def test_call(%ExPostFacto.InputData{} = _data, %ExPostFacto.Result{is_position_open: is_position_open} = _result) do
     # Simple strategy: buy on first call, sell on second call
     if !is_position_open do
-      IO.puts("TEST BUY SIGNAL!")
       :buy
     else
-      IO.puts("TEST SELL SIGNAL!")
       :close_buy
     end
   end
@@ -186,14 +228,11 @@ defmodule SMAStrategy do
   @doc """
   Simple trend-following strategy based on price action.
   This is a simplified strategy that works with MFA pattern.
-  For complex strategies with indicators, use the Strategy behavior instead.
   """
   def simple_trend_call(%ExPostFacto.InputData{close: price}, %ExPostFacto.Result{is_position_open: is_position_open}) do
-    # Dynamic strategy: buy when price is above average + buffer, sell when below average - buffer
-    # Use more responsive thresholds based on the enhanced data generation
-    avg_price = 100.0  # Base price from our data generator
-    buy_threshold = avg_price * 1.08   # 8% above average (more sensitive)
-    sell_threshold = avg_price * 0.92  # 8% below average (more sensitive)
+    # ULTRA-AGGRESSIVE strategy: buy when price is above 101, sell when below 99
+    buy_threshold = 101.0   # Just 1% above base price
+    sell_threshold = 99.0   # Just 1% below base price
 
     cond do
       !is_position_open && price > buy_threshold ->
@@ -206,22 +245,70 @@ defmodule SMAStrategy do
   end
 
   @doc """
+  Simple Moving Average crossover strategy using MFA pattern.
+  ULTRA-AGGRESSIVE version that trades on any MA difference.
+  """
+  def sma_crossover_call(%ExPostFacto.InputData{close: price}, %ExPostFacto.Result{data_points: data_points, is_position_open: is_position_open}) do
+    # Get recent closing prices from data points
+    recent_prices = [price | Enum.map(data_points, fn dp -> dp.datum.close end)]
+
+    # Use VERY short periods: 2-day and 3-day moving averages for maximum sensitivity
+    fast_ma = calculate_sma(recent_prices, 2)
+    slow_ma = calculate_sma(recent_prices, 3)
+
+    # Only need 3 data points to start trading
+    if length(recent_prices) >= 3 do
+      # Get previous moving averages to detect crossovers
+      prev_prices = tl(recent_prices)
+      prev_fast_ma = calculate_sma(prev_prices, 2)
+      prev_slow_ma = calculate_sma(prev_prices, 3)
+
+      cond do
+        # Fast MA crosses above slow MA (golden cross) - buy signal
+        !is_position_open && fast_ma > slow_ma && prev_fast_ma <= prev_slow_ma ->
+          :buy
+
+        # Fast MA crosses below slow MA (death cross) - sell signal
+        is_position_open && fast_ma < slow_ma && prev_fast_ma >= prev_slow_ma ->
+          :close_buy
+
+        # ALSO: Trade on significant MA divergence (ultra-aggressive)
+        !is_position_open && fast_ma > slow_ma + 0.5 ->
+          :buy
+
+        is_position_open && fast_ma < slow_ma - 0.5 ->
+          :close_buy
+
+        true ->
+          :noop
+      end
+    else
+      # Start trading immediately with simple logic
+      cond do
+        !is_position_open && price > 100.0 ->
+          :buy
+        is_position_open && price < 100.0 ->
+          :close_buy
+        true ->
+          :noop
+      end
+    end
+  end
+
+  @doc """
   Adaptive trend strategy that calculates thresholds based on recent price action.
-  More sophisticated version that should generate more trades.
   """
   def adaptive_trend_call(%ExPostFacto.InputData{close: price}, %ExPostFacto.Result{data_points: data_points, is_position_open: is_position_open}) do
-    # Calculate dynamic thresholds based on recent price action
-    recent_prices = data_points
-    |> Enum.take(20)  # Look at last 20 data points
-    |> Enum.map(fn dp -> dp.datum.close end)
+    # ULTRA-AGGRESSIVE adaptive strategy with very tight thresholds
+    recent_prices = [price | Enum.map(data_points, fn dp -> dp.datum.close end)]
+    |> Enum.take(5)  # Look at just last 5 data points for maximum sensitivity
 
-    if length(recent_prices) >= 5 do
+    if length(recent_prices) >= 2 do
       avg_recent = Enum.sum(recent_prices) / length(recent_prices)
-      price_std = calculate_std_dev(recent_prices, avg_recent)
 
-      # Use standard deviation to set dynamic thresholds - more aggressive
-      buy_threshold = avg_recent + (price_std * 0.3)  # Reduced from 0.5 to 0.3
-      sell_threshold = avg_recent - (price_std * 0.3)  # More sensitive thresholds
+      # Use TINY thresholds for maximum trading
+      buy_threshold = avg_recent + 0.5  # Just 50 cents above recent average
+      sell_threshold = avg_recent - 0.5  # Just 50 cents below recent average
 
       cond do
         !is_position_open && price > buy_threshold ->
@@ -232,15 +319,69 @@ defmodule SMAStrategy do
           :noop
       end
     else
-      # Not enough data, use simple price level strategy - more responsive
+      # Not enough data, use ultra-simple thresholds
       cond do
-        !is_position_open && price > 105.0 ->  # Reduced threshold
+        !is_position_open && price > 100.5 ->  # Just 0.5% above base
           :buy
-        is_position_open && price < 95.0 ->   # Reduced threshold
+        is_position_open && price < 99.5 ->   # Just 0.5% below base
           :close_buy
         true ->
           :noop
       end
+    end
+  end
+
+  @doc """
+  Ultra-aggressive oscillator strategy that trades on every small price movement.
+  This should generate MANY trades by buying low and selling high repeatedly.
+  """
+  def oscillator_call(%ExPostFacto.InputData{close: price}, %ExPostFacto.Result{data_points: data_points, is_position_open: is_position_open}) do
+    # Get recent price to compare
+    recent_prices = [price | Enum.map(data_points, fn dp -> dp.datum.close end)]
+    |> Enum.take(3)
+
+    if length(recent_prices) >= 2 do
+      current_price = hd(recent_prices)
+      prev_price = Enum.at(recent_prices, 1)
+
+      # Trade on ANY price movement greater than $0.25
+      price_change = current_price - prev_price
+
+      cond do
+        # Buy if price just dropped (buy the dip)
+        !is_position_open && price_change < -0.25 ->
+          :buy
+        # Sell if price went up while we're long (take profit)
+        is_position_open && price_change > 0.25 ->
+          :close_buy
+        # Also sell if we're down more than $1
+        is_position_open && current_price < 99.0 ->
+          :close_buy
+        true ->
+          :noop
+      end
+    else
+      # First few data points - start trading immediately
+      cond do
+        !is_position_open && price < 100.0 ->
+          :buy
+        is_position_open && price > 100.0 ->
+          :close_buy
+        true ->
+          :noop
+      end
+    end
+  end
+
+  # Helper function to calculate Simple Moving Average
+  defp calculate_sma(prices, period) do
+    if length(prices) >= period do
+      prices
+      |> Enum.take(period)
+      |> Enum.sum()
+      |> Kernel./(period)
+    else
+      0.0
     end
   end
 
@@ -251,94 +392,6 @@ defmodule SMAStrategy do
     |> Kernel./(length(prices))
 
     :math.sqrt(variance)
-  end
-end
-
-# For proper moving average strategies, we should use the Strategy behavior:
-defmodule ProperSMAStrategy do
-  @moduledoc """
-  Proper implementation using ExPostFacto.Strategy behavior.
-  This is the recommended approach for stateful strategies.
-  """
-
-  use ExPostFacto.Strategy
-
-  def init(opts) do
-    fast_period = Keyword.get(opts, :fast_period, 5)
-    slow_period = Keyword.get(opts, :slow_period, 10)
-
-    if fast_period >= slow_period do
-      {:error, "fast_period must be less than slow_period"}
-    else
-      {:ok, %{
-        fast_period: fast_period,
-        slow_period: slow_period,
-        price_history: [],
-        fast_sma_history: [],
-        slow_sma_history: []
-      }}
-    end
-  end
-
-  def next(state) do
-    current_price = data().close
-    updated_price_history = [current_price | state.price_history]
-
-    # Calculate SMAs if we have enough data
-    {fast_sma, slow_sma} = calculate_smas(updated_price_history, state.fast_period, state.slow_period)
-
-    # Make trading decisions based on SMA crossover
-    make_trading_decision(fast_sma, slow_sma, state)
-
-    new_state = %{
-      state |
-      price_history: updated_price_history,
-      fast_sma_history: [fast_sma | state.fast_sma_history],
-      slow_sma_history: [slow_sma | state.slow_sma_history]
-    }
-
-    {:ok, new_state}
-  end
-
-  defp calculate_smas(price_history, fast_period, slow_period) do
-    fast_sma = if length(price_history) >= fast_period do
-      indicator(:sma, price_history, fast_period) |> List.first()
-    else
-      0.0
-    end
-
-    slow_sma = if length(price_history) >= slow_period do
-      indicator(:sma, price_history, slow_period) |> List.first()
-    else
-      0.0
-    end
-
-    {fast_sma, slow_sma}
-  end
-
-  defp make_trading_decision(fast_sma, slow_sma, state) do
-    current_position = position()
-
-    # Check for crossovers using the built-in crossover detection
-    fast_sma_history = [fast_sma | state.fast_sma_history]
-    slow_sma_history = [slow_sma | state.slow_sma_history]
-
-    cond do
-      # Fast SMA crosses above slow SMA - buy signal
-      length(fast_sma_history) >= 2 and length(slow_sma_history) >= 2 and
-      crossover?(fast_sma_history, slow_sma_history) and current_position != :long ->
-        if current_position == :short, do: close_sell()
-        buy()
-
-      # Fast SMA crosses below slow SMA - sell signal
-      length(fast_sma_history) >= 2 and length(slow_sma_history) >= 2 and
-      crossover?(slow_sma_history, fast_sma_history) and current_position != :short ->
-        if current_position == :long, do: close_buy()
-        sell()
-
-      true ->
-        :ok
-    end
   end
 end
 ```
@@ -372,17 +425,25 @@ IO.puts("=== Testing Adaptive Trend Strategy (MFA) ===")
   starting_balance: 100_000.0
 )
 
-IO.puts("=== Testing Built-in SMA Strategy (Fast: 3, Slow: 8) ===")
-{:ok, result2} = ExPostFacto.backtest(
+IO.puts("=== Testing SMA Crossover Strategy (2/3 day MAs) ===")
+{:ok, result_sma} = ExPostFacto.backtest(
   market_data,
-  {ExPostFacto.ExampleStrategies.SmaStrategy, [fast_period: 3, slow_period: 8]},
+  {SMAStrategy, :sma_crossover_call, []},
   starting_balance: 100_000.0
 )
 
-IO.puts("=== Testing Built-in SMA Strategy (Fast: 5, Slow: 15) ===")
-{:ok, result3} = ExPostFacto.backtest(
+IO.puts("=== Testing Ultra-Aggressive Oscillator Strategy ===")
+{:ok, result_oscillator} = ExPostFacto.backtest(
   market_data,
-  {ExPostFacto.ExampleStrategies.SmaStrategy, [fast_period: 5, slow_period: 15]},
+  {SMAStrategy, :oscillator_call, []},
+  starting_balance: 100_000.0
+)
+
+# Using working built-in strategies for comparison
+IO.puts("=== Testing Buy and Hold Strategy ===")
+{:ok, result_buy_hold} = ExPostFacto.backtest(
+  market_data,
+  {ExPostFacto.ExampleStrategies.SimpleBuyHold, []},  # Strategy behavior format
   starting_balance: 100_000.0
 )
 
@@ -390,8 +451,9 @@ IO.puts("=== Testing Built-in SMA Strategy (Fast: 5, Slow: 15) ===")
 strategies = [
   {"Simple Trend", result1},
   {"Adaptive Trend", result1_adaptive},
-  {"SMA (3/8)", result2},
-  {"SMA (5/15)", result3}
+  {"SMA Crossover (2/3)", result_sma},
+  {"Ultra Oscillator", result_oscillator},
+  {"Buy & Hold", result_buy_hold}
 ]
 
 IO.puts("\n" <> String.duplicate("=", 80))
@@ -444,18 +506,35 @@ end
 
 ### Understanding ExPostFacto Strategy Architecture
 
-Before diving into visualizations, it's important to understand why our initial moving average strategy may not generate trades:
+ExPostFacto supports two different strategy patterns:
 
-**The Issue**: ExPostFacto's `result.data_points` contains **processed trading actions**, not raw historical price data. When a strategy function is called, `data_points` only contains previously executed trades, which is why it was always empty in our debug output.
+**1. MFA Pattern (Module-Function-Arguments)** - For simple, stateless strategies:
 
-**The Solution**: Strategies must maintain their own price history for indicator calculations. ExPostFacto provides two approaches:
+```elixir
+# Custom functions we defined in SMAStrategy module
+{SMAStrategy, :simple_trend_call, []}
+{SMAStrategy, :sma_crossover_call, []}
 
-1. **Simple MFA Pattern**: For basic strategies without complex state
-2. **Strategy Behavior**: For advanced strategies that need to maintain historical data
+# Built-in MFA strategies
+{ExPostFacto.ExampleStrategies.BuyBuyBuy, :call, []}
+{ExPostFacto.ExampleStrategies.Noop, :noop, []}
+```
 
-The proper moving average strategy shown above uses the Strategy behavior, which is the recommended approach for any strategy that needs to calculate technical indicators.
+**2. Strategy Behavior** - For complex strategies with state management:
 
-**Note**: For production use, ExPostFacto includes several pre-built strategies like `ExPostFacto.ExampleStrategies.SmaStrategy` that are well-tested and optimized. The custom `ProperSMAStrategy` shown above is for educational purposes to demonstrate the Strategy behavior pattern.
+```elixir
+# Built-in Strategy behavior implementations
+{ExPostFacto.ExampleStrategies.SimpleBuyHold, []}  # Options passed to init/1
+{ExPostFacto.ExampleStrategies.SmaStrategy, [fast_period: 5, slow_period: 10]}
+{ExPostFacto.ExampleStrategies.AdvancedMacdStrategy, []}
+```
+
+**Key Differences:**
+
+- **MFA strategies**: Simple functions that receive `(data, result)` and return an action
+- **Strategy behavior**: Complex strategies with `init/1` and `next/1` callbacks, internal state, and helper functions
+
+The reason some built-in strategies didn't work initially is because they use the Strategy behavior pattern (expecting options, not function calls), while our custom strategies use the simpler MFA pattern.
 
 ### Key Takeaways:
 
@@ -766,101 +845,228 @@ Kino.VegaLite.new(trade_dist_chart)
 ### Parameter Optimization
 
 ```elixir
-# Cell 9: Interactive Parameter Testing
+# Cell 9: Interactive Parameter Testing with Working Strategies
 defmodule ParameterOptimizer do
-  def test_sma_parameters(market_data, short_periods, long_periods) do
-    results = for short <- short_periods, long <- long_periods, short < long do
-      # Use the built-in SMA strategy from ExPostFacto
+  # Define multiple threshold strategies with different hardcoded values
+  def threshold_strategy_2pct(%ExPostFacto.InputData{close: price}, %ExPostFacto.Result{is_position_open: is_position_open}) do
+    threshold_strategy_with_multiplier(price, is_position_open, 0.02)
+  end
+
+  def threshold_strategy_4pct(%ExPostFacto.InputData{close: price}, %ExPostFacto.Result{is_position_open: is_position_open}) do
+    threshold_strategy_with_multiplier(price, is_position_open, 0.04)
+  end
+
+  def threshold_strategy_6pct(%ExPostFacto.InputData{close: price}, %ExPostFacto.Result{is_position_open: is_position_open}) do
+    threshold_strategy_with_multiplier(price, is_position_open, 0.06)
+  end
+
+  def threshold_strategy_8pct(%ExPostFacto.InputData{close: price}, %ExPostFacto.Result{is_position_open: is_position_open}) do
+    threshold_strategy_with_multiplier(price, is_position_open, 0.08)
+  end
+
+  def threshold_strategy_10pct(%ExPostFacto.InputData{close: price}, %ExPostFacto.Result{is_position_open: is_position_open}) do
+    threshold_strategy_with_multiplier(price, is_position_open, 0.10)
+  end
+
+  def threshold_strategy_12pct(%ExPostFacto.InputData{close: price}, %ExPostFacto.Result{is_position_open: is_position_open}) do
+    threshold_strategy_with_multiplier(price, is_position_open, 0.12)
+  end
+
+  # Helper function that implements the actual strategy logic
+  defp threshold_strategy_with_multiplier(price, is_position_open, threshold_multiplier) do
+    avg_price = 100.0  # Base price from our data generator (starts at 100)
+    buy_threshold = avg_price * (1.0 - threshold_multiplier)   # X% below average (buy low)
+    sell_threshold = avg_price * (1.0 + threshold_multiplier)  # X% above average (sell high)
+
+    cond do
+      !is_position_open && price < buy_threshold ->
+        :buy
+      is_position_open && price > sell_threshold ->
+        :close_buy
+      true ->
+        :noop
+    end
+  end
+
+  def test_threshold_parameters(market_data) do
+    # Map threshold multipliers to their corresponding function names
+    strategy_functions = [
+      {0.02, :threshold_strategy_2pct},
+      {0.04, :threshold_strategy_4pct},
+      {0.06, :threshold_strategy_6pct},
+      {0.08, :threshold_strategy_8pct},
+      {0.10, :threshold_strategy_10pct},
+      {0.12, :threshold_strategy_12pct}
+    ]
+
+    results = for {multiplier, function_name} <- strategy_functions do
+      # Use MFA format with the specific function for each threshold
       {:ok, result} = ExPostFacto.backtest(
         market_data,
-        {ExPostFacto.ExampleStrategies.SmaStrategy, [fast_period: short, slow_period: long]},
+        {ParameterOptimizer, function_name, []},
         starting_balance: 100_000.0
       )
 
       stats = ExPostFacto.Result.comprehensive_summary(result.result)
 
       %{
-        short_period: short,
-        long_period: long,
+        threshold_pct: multiplier * 100,
         total_return: stats.total_return_pct,
         sharpe_ratio: stats.sharpe_ratio,
         win_rate: stats.win_rate,
-        max_drawdown: stats.max_drawdown_pct
+        max_drawdown: stats.max_drawdown_pct,
+        trade_count: length(result.result.trade_pairs)
       }
     end
 
-    # Find best performing combination by Sharpe ratio, but handle empty results
+    # Find best performing combination by Sharpe ratio
     best = if length(results) > 0 do
       Enum.max_by(results, & &1.sharpe_ratio)
     else
-      %{short_period: 0, long_period: 0, total_return: 0.0, sharpe_ratio: 0.0, win_rate: 0.0, max_drawdown: 0.0}
+      %{threshold_pct: 0.0, total_return: 0.0, sharpe_ratio: 0.0, win_rate: 0.0, max_drawdown: 0.0, trade_count: 0}
     end
 
     {results, best}
   end
 end
 
-# Test different parameter combinations - using shorter periods for more responsive strategies
-short_periods = [3, 5, 8]
-long_periods = [10, 15, 20]
-
-{param_results, best_params} = ParameterOptimizer.test_sma_parameters(
-  market_data,
-  short_periods,
-  long_periods
+# Test different threshold sensitivities
+{param_results, best_params} = ParameterOptimizer.test_threshold_parameters(
+  market_data
 )
 
 IO.puts("=== Parameter Optimization Results ===")
-IO.puts("Tested #{length(param_results)} parameter combinations")
+IO.puts("Tested #{length(param_results)} threshold combinations")
 
-# Show all results, not just the best
-IO.puts("\n📊 All Parameter Combinations:")
+# Show all results
+IO.puts("\n📊 Threshold Sensitivity Analysis:")
 for result <- param_results do
-  IO.puts("#{result.short_period}/#{result.long_period}: Return #{Float.round(result.total_return * 1.0, 1)}%, Sharpe #{Float.round(result.sharpe_ratio * 1.0, 2)}, Win Rate #{Float.round(result.win_rate * 1.0, 1)}%")
+  IO.puts("±#{result.threshold_pct}%: Return #{Float.round(result.total_return * 1.0, 1)}%, Sharpe #{Float.round(result.sharpe_ratio * 1.0, 2)}, Trades #{result.trade_count}, Win Rate #{Float.round(result.win_rate * 1.0, 1)}%")
 end
 
-IO.puts("\n🏆 Best Parameters: #{best_params.short_period}/#{best_params.long_period}")
+IO.puts("\n🏆 Best Threshold: ±#{best_params.threshold_pct}%")
 IO.puts("📈 Sharpe Ratio: #{Float.round(best_params.sharpe_ratio * 1.0, 3)}")
 IO.puts("💰 Total Return: #{Float.round(best_params.total_return * 1.0, 2)}%")
 IO.puts("🎯 Win Rate: #{Float.round(best_params.win_rate * 1.0, 2)}%")
 IO.puts("📉 Max Drawdown: #{Float.round(best_params.max_drawdown * 1.0, 2)}%")
+IO.puts("🔄 Total Trades: #{best_params.trade_count}")
 ```
 
 ### Real-time Strategy Testing
 
 ```elixir
 # Cell 10: Interactive Strategy Form
+defmodule InteractiveStrategy do
+  # Create multiple threshold strategies for common percentages
+  def threshold_1pct(%ExPostFacto.InputData{close: price}, %ExPostFacto.Result{is_position_open: is_position_open}) do
+    threshold_logic(price, is_position_open, 0.01)
+  end
+
+  def threshold_2pct(%ExPostFacto.InputData{close: price}, %ExPostFacto.Result{is_position_open: is_position_open}) do
+    threshold_logic(price, is_position_open, 0.02)
+  end
+
+  def threshold_3pct(%ExPostFacto.InputData{close: price}, %ExPostFacto.Result{is_position_open: is_position_open}) do
+    threshold_logic(price, is_position_open, 0.03)
+  end
+
+  def threshold_4pct(%ExPostFacto.InputData{close: price}, %ExPostFacto.Result{is_position_open: is_position_open}) do
+    threshold_logic(price, is_position_open, 0.04)
+  end
+
+  def threshold_5pct(%ExPostFacto.InputData{close: price}, %ExPostFacto.Result{is_position_open: is_position_open}) do
+    threshold_logic(price, is_position_open, 0.05)
+  end
+
+  def threshold_6pct(%ExPostFacto.InputData{close: price}, %ExPostFacto.Result{is_position_open: is_position_open}) do
+    threshold_logic(price, is_position_open, 0.06)
+  end
+
+  def threshold_8pct(%ExPostFacto.InputData{close: price}, %ExPostFacto.Result{is_position_open: is_position_open}) do
+    threshold_logic(price, is_position_open, 0.08)
+  end
+
+  def threshold_10pct(%ExPostFacto.InputData{close: price}, %ExPostFacto.Result{is_position_open: is_position_open}) do
+    threshold_logic(price, is_position_open, 0.10)
+  end
+
+  def threshold_12pct(%ExPostFacto.InputData{close: price}, %ExPostFacto.Result{is_position_open: is_position_open}) do
+    threshold_logic(price, is_position_open, 0.12)
+  end
+
+  def threshold_15pct(%ExPostFacto.InputData{close: price}, %ExPostFacto.Result{is_position_open: is_position_open}) do
+    threshold_logic(price, is_position_open, 0.15)
+  end
+
+  def threshold_20pct(%ExPostFacto.InputData{close: price}, %ExPostFacto.Result{is_position_open: is_position_open}) do
+    threshold_logic(price, is_position_open, 0.20)
+  end
+
+  # Helper function that implements the actual strategy logic
+  defp threshold_logic(price, is_position_open, threshold_multiplier) do
+    avg_price = 100.0  # Base price (data starts at 100)
+    buy_threshold = avg_price * (1.0 - threshold_multiplier)  # Buy low
+    sell_threshold = avg_price * (1.0 + threshold_multiplier) # Sell high
+
+    cond do
+      !is_position_open && price < buy_threshold ->
+        :buy
+      is_position_open && price > sell_threshold ->
+        :close_buy
+      true ->
+        :noop
+    end
+  end
+
+  # Function to select the appropriate strategy function based on threshold percentage
+  def get_strategy_function(threshold_pct) do
+    case threshold_pct do
+      x when x <= 1.5 -> :threshold_1pct
+      x when x <= 2.5 -> :threshold_2pct
+      x when x <= 3.5 -> :threshold_3pct
+      x when x <= 4.5 -> :threshold_4pct
+      x when x <= 5.5 -> :threshold_5pct
+      x when x <= 7.0 -> :threshold_6pct
+      x when x <= 9.0 -> :threshold_8pct
+      x when x <= 11.0 -> :threshold_10pct
+      x when x <= 13.5 -> :threshold_12pct
+      x when x <= 17.5 -> :threshold_15pct
+      _ -> :threshold_20pct
+    end
+  end
+end
+
 form =
   Kino.Control.form([
-    short_ma: Kino.Control.number("Short MA Period", default: 10),
-    long_ma: Kino.Control.number("Long MA Period", default: 20),
-    initial_balance: Kino.Control.number("Starting Balance", default: 100_000)
+    threshold_pct: Kino.Input.number("Threshold Percentage", default: 6.0),
+    initial_balance: Kino.Input.number("Starting Balance", default: 100_000)
   ], submit: "Run Backtest")
 
 Kino.Control.stream(form)
-|> Kino.listen(fn %{data: %{short_ma: short, long_ma: long, initial_balance: balance}} ->
-  if short < long do
-    # Use the built-in SMA strategy from ExPostFacto
+|> Kino.listen(fn %{data: %{threshold_pct: threshold, initial_balance: balance}} ->
+  if threshold > 0 and threshold <= 20 do
+    # Get the appropriate strategy function for this threshold
+    strategy_function = InteractiveStrategy.get_strategy_function(threshold)
+
     {:ok, result} = ExPostFacto.backtest(
       market_data,
-      {ExPostFacto.ExampleStrategies.SmaStrategy, [fast_period: short, slow_period: long]},
+      {InteractiveStrategy, strategy_function, []},
       starting_balance: balance
     )
 
     stats = ExPostFacto.Result.comprehensive_summary(result.result)
 
-    stats = ExPostFacto.Result.comprehensive_summary(result.result)
-
     IO.puts("\n=== Custom Strategy Results ===")
-    IO.puts("Parameters: #{short}/#{long} MA")
+    IO.puts("Threshold: ±#{threshold}% (using #{strategy_function})")
     IO.puts("Starting Balance: $#{balance}")
     IO.puts("Final Balance: $#{Float.round(stats.final_balance * 1.0, 2)}")
     IO.puts("Total Return: #{Float.round(stats.total_return_pct * 1.0, 2)}%")
     IO.puts("Sharpe Ratio: #{Float.round(stats.sharpe_ratio * 1.0, 3)}")
     IO.puts("Win Rate: #{Float.round(stats.win_rate * 1.0, 2)}%")
     IO.puts("Max Drawdown: #{Float.round(stats.max_drawdown_pct * 1.0, 2)}%")
+    IO.puts("Total Trades: #{length(result.result.trade_pairs)}")
   else
-    IO.puts("Error: Short MA period must be less than Long MA period")
+    IO.puts("Error: Threshold must be between 0% and 20%")
   end
 end)
 

@@ -47,7 +47,7 @@ market_data = [
 # Simple buy-and-hold strategy - just buy on the first data point
 {:ok, result} = ExPostFacto.backtest(
   market_data,
-  {ExPostFacto.ExampleStrategies.SimpleBuyHold, :call, []},
+  {ExPostFacto.ExampleStrategies.SimpleBuyHold, []},
   starting_balance: 10_000.0
 )
 
@@ -264,7 +264,7 @@ ExPostFacto includes several example strategies to get you started:
 # Buy and hold
 {:ok, result} = ExPostFacto.backtest(
   data,
-  {ExPostFacto.ExampleStrategies.SimpleBuyHold, :call, []}
+  {ExPostFacto.ExampleStrategies.SimpleBuyHold, []}
 )
 ```
 

@@ -100,7 +100,7 @@ market_data = [
 # Simple buy-and-hold strategy
 {:ok, result} = ExPostFacto.backtest(
   market_data,
-  {ExPostFacto.ExampleStrategies.SimpleBuyHold, :call, []},
+  {ExPostFacto.ExampleStrategies.SimpleBuyHold, []},
   starting_balance: 10_000.0
 )
 
