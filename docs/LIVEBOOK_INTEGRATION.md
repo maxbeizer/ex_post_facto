@@ -384,15 +384,6 @@ defmodule SMAStrategy do
       0.0
     end
   end
-
-  defp calculate_std_dev(prices, avg) do
-    variance = prices
-    |> Enum.map(fn price -> :math.pow(price - avg, 2) end)
-    |> Enum.sum()
-    |> Kernel./(length(prices))
-
-    :math.sqrt(variance)
-  end
 end
 ```
 
