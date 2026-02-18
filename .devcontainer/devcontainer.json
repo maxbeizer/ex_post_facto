@@ -1,0 +1,12 @@
+{
+  "name": "ExPostFacto",
+  "image": "hexpm/elixir:1.18.3-erlang-26.1.2-debian-bookworm-20250113-slim",
+  "postCreateCommand": "mix local.hex --force && mix local.rebar --force && mix deps.get && mix compile",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "JakeBecker.elixir-ls"
+      ]
+    }
+  }
+}
