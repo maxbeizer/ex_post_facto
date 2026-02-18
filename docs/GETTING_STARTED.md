@@ -32,7 +32,10 @@ mix deps.get
 
 ## Your First Backtest
 
-Let's start with a simple example using some sample market data:
+Let's start with a simple example using some sample market data and a strategy
+that generates completed trades. ExPostFacto tracks **round-trip trades** — a
+`:buy` action paired with a `:close_buy` — so your strategy needs to both enter
+and exit positions for results to appear.
 
 ```elixir
 # Define some sample market data
@@ -44,17 +47,27 @@ market_data = [
   %{open: 110.0, high: 115.0, low: 109.0, close: 113.0, timestamp: "2023-01-05"}
 ]
 
-# Simple buy-and-hold strategy - just buy on the first data point
+# A simple threshold strategy: buy when price <= 105, close when price > 105
+defmodule SimpleThresholdStrategy do
+  def call(data, _result) do
+    if data.close > 105.0, do: :close_buy, else: :buy
+  end
+end
+
 {:ok, result} = ExPostFacto.backtest(
   market_data,
-  {ExPostFacto.ExampleStrategies.SimpleBuyHold, []},
+  {SimpleThresholdStrategy, :call, []},
   starting_balance: 10_000.0
 )
 
 # View the results
 IO.puts("Total return: $#{result.result.total_profit_and_loss}")
-IO.puts("Number of trades: #{result.result.trades_count}")
+IO.puts("Win rate: #{result.result.win_rate}%")
 ```
+
+> **Note:** If you use a buy-and-hold strategy (one that buys but never closes),
+> you will see `$0.0` total return and 0 trades because no round-trip trade was
+> completed.
 
 ## Loading Data from Files
 
