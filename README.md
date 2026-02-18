@@ -12,18 +12,18 @@ ExPostFacto empowers traders and developers to test their trading strategies aga
 - **🎯 Easy to Use**: Simple API that gets you backtesting in minutes
 - **📊 Professional Grade**: Comprehensive statistics and performance metrics
 - **🔧 Flexible**: Support for simple functions or advanced strategy behaviours
-- **⚡ Fast**: Concurrent optimization and streaming for large datasets
+- **⚡ Fast**: Concurrent optimization for large parameter spaces
 - **🧹 Robust**: Built-in data validation, cleaning, and error handling
-- **📈 Complete**: 20+ technical indicators and optimization algorithms
+- **📈 Growing**: 6 technical indicators with more on the roadmap
 
 ## ✨ Key Features
 
 ### Multiple Input Formats
 
 - **CSV files** - Load data directly from CSV files
-- **JSON** - Parse JSON market data
 - **Lists of maps** - Use runtime data structures
-- **Streaming** - Handle large datasets efficiently
+- **JSON** - 🗺️ _Roadmap_
+- **Streaming** - Handle large datasets with chunked processing
 
 ### Data Validation & Cleaning
 
@@ -37,41 +37,38 @@ ExPostFacto empowers traders and developers to test their trading strategies aga
 - **Simple MFA functions** for quick prototypes
 - **Advanced Strategy behaviour** with state management
 - **Built-in helper functions** - `buy()`, `sell()`, `position()`, etc.
-- **20+ technical indicators** - SMA, EMA, RSI, MACD, Bollinger Bands, and more
+- **6 technical indicators** - SMA, EMA, RSI, MACD, Bollinger Bands, ATR (more on the roadmap)
 
 ### Performance & Optimization
 
 - **Parameter optimization** with grid search, random search, walk-forward analysis
 - **Concurrent processing** for large parameter spaces
-- **Memory-efficient streaming** for massive datasets
-- **Performance profiling** and bottleneck identification
+- **Chunked streaming** for large datasets via `backtest_stream/3`
 
 ### Comprehensive Analytics
 
-- **30+ performance metrics** - Sharpe ratio, CAGR, max drawdown, profit factor
-- **Trade analysis** - Win rate, best/worst trades, trade duration
-- **Risk metrics** - Drawdown analysis, volatility measures
-- **Visual data** - Heatmaps for parameter optimization
+- **45+ result fields** - Total P&L, win rate, drawdown, trade duration, and more
+- **Financial ratios** - Sharpe, Sortino, Calmar, CAGR, profit factor
+- **System quality** - SQN, Kelly criterion, expectancy
+- **Risk metrics** - Drawdown analysis, volatility (market risk metrics use simplified estimates)
 
 See [ENHANCED_DATA_HANDLING_EXAMPLES.md](docs/ENHANCED_DATA_HANDLING_EXAMPLES.md) for detailed usage examples.
 
 ## LiveBook Integration
 
-ExPostFacto works seamlessly with [LiveBook](https://livebook.dev/) for interactive backtesting and analysis:
+ExPostFacto can be used with [LiveBook](https://livebook.dev/) for interactive backtesting and analysis:
 
 ```elixir
 # In LiveBook, install dependencies:
 Mix.install([
-  {:ex_post_facto, "~> 0.2.0"},
-  {:kino, "~> 0.12.0"},
-  {:kino_vega_lite, "~> 0.1.0"}
+  {:ex_post_facto, "~> 0.2.0"}
 ])
 
-# Run interactive backtests with rich visualizations
+# Run interactive backtests
 {:ok, result} = ExPostFacto.backtest(data, {MyStrategy, :call, []})
 ```
 
-See [LiveBook Integration Guide](docs/LIVEBOOK_INTEGRATION.md) for comprehensive examples, interactive forms, and visualization techniques.
+See [LiveBook Integration Guide](docs/LIVEBOOK_INTEGRATION.md) for examples.
 
 ## 📖 Quick Start
 
@@ -89,6 +86,9 @@ end
 
 ### Your First Backtest
 
+ExPostFacto tracks **round-trip trades** — a `:buy` paired with a `:close_buy` — so
+your strategy needs to both enter and exit positions for results to appear.
+
 ```elixir
 # Sample market data
 market_data = [
@@ -97,10 +97,16 @@ market_data = [
   %{open: 106.0, high: 110.0, low: 104.0, close: 108.0, timestamp: "2023-01-03"}
 ]
 
-# Simple buy-and-hold strategy
+# Simple threshold strategy: buy when cheap, close when above target
+defmodule SimpleThresholdStrategy do
+  def call(data, _result) do
+    if data.close > 105.0, do: :close_buy, else: :buy
+  end
+end
+
 {:ok, result} = ExPostFacto.backtest(
   market_data,
-  {ExPostFacto.ExampleStrategies.SimpleBuyHold, []},
+  {SimpleThresholdStrategy, :call, []},
   starting_balance: 10_000.0
 )
 
@@ -181,7 +187,7 @@ end
 
 ## 📈 Technical Indicators
 
-ExPostFacto includes 20+ built-in technical indicators:
+ExPostFacto includes 6 built-in technical indicators (more on the roadmap):
 
 ```elixir
 # Available indicators
@@ -192,6 +198,7 @@ ema_12 = indicator(:ema, prices, 12)
 rsi_14 = indicator(:rsi, prices, 14)
 {macd, signal, histogram} = indicator(:macd, prices)
 {bb_upper, bb_middle, bb_lower} = indicator(:bollinger_bands, prices)
+atr = indicator(:atr, candles, 14)
 
 # Crossover detection
 if crossover?(fast_sma, slow_sma) do
@@ -309,15 +316,14 @@ ExPostFacto includes several example strategies:
 
 ## 🔧 Advanced Features
 
-### Streaming for Large Datasets
+### Chunked Streaming for Large Datasets
 
 ```elixir
-# Handle massive datasets efficiently
+# Handle large datasets with chunked processing
 {:ok, result} = ExPostFacto.backtest_stream(
   "very_large_dataset.csv",
-  {MyStrategy, []},
-  chunk_size: 1000,
-  memory_limit_mb: 100
+  {MyStrategy, :call, []},
+  chunk_size: 1000
 )
 ```
 
@@ -335,10 +341,10 @@ ExPostFacto includes several example strategies:
 )
 ```
 
-### Heatmap Visualization
+### Heatmap Data
 
 ```elixir
-# Generate parameter heatmaps
+# Generate parameter heatmaps from optimization results
 {:ok, optimization_result} = ExPostFacto.optimize(data, MyStrategy, param_ranges)
 {:ok, heatmap} = ExPostFacto.heatmap(optimization_result, :param1, :param2)
 
@@ -352,10 +358,10 @@ IO.inspect(heatmap.scores)  # 2D array of performance scores
 | --------------------- | ------------ | -------------- | ---------- | ------------ |
 | **Language**          | Elixir       | Python         | Python     | C#/Python    |
 | **Concurrency**       | ✅ Native    | ❌             | ❌         | ✅           |
-| **Memory Efficiency** | ✅ Streaming | ❌             | ❌         | ✅           |
 | **Data Validation**   | ✅ Built-in  | ❌             | ❌         | ✅           |
 | **Walk-Forward**      | ✅           | ❌             | ✅         | ✅           |
 | **Easy Setup**        | ✅           | ✅             | ❌         | ❌           |
+| **Indicators**        | 6            | 100+           | 100+       | 100+         |
 
 ## 🤝 Contributing
 
